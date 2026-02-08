@@ -1,26 +1,155 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary: #3a26a8;
+  --secondary: #036bed;
+  --text-white: #F5F5F5;
+  --text-dark: #282a2d;
+  --muted: oklch(0.97 0.01 240);
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: oklch(0.9 0.05 60);
+  --accent-foreground: oklch(0.2 0 0);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.9 0.01 240);
+  --input: oklch(0.95 0.01 240);
+  --ring: oklch(0.35 0.1 240 / 0.3);
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --primary: #5d4ad8;
+  --secondary: #1479ff;
+  --text-white: #F5F5F5;
+  --text-dark: #282a2d;
+  --muted: oklch(0.18 0.02 240);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.7 0.15 60);
+  --accent-foreground: oklch(0.12 0 0);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.95 0 0);
+  --border: oklch(0.25 0.02 240);
+  --input: oklch(0.18 0.02 240);
+  --ring: oklch(0.75 0.15 60 / 0.5);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-text-white: var(--text-white);
+  --color-text-dark: var(--text-dark);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  /* Custom hover colors */
+  --color-primary-hover: color-mix(in srgb, var(--primary) 90%, black 10%);
+  --color-secondary-hover: color-mix(in srgb, var(--secondary) 90%, black 10%);
+  
+  /* Gray scale for consistency */
+  --color-gray-100: oklch(0.97 0.01 240);
+  --color-gray-200: oklch(0.94 0.01 240);
+  --color-gray-300: oklch(0.87 0.01 240);
+  --color-gray-400: oklch(0.70 0.01 240);
+  --color-gray-500: oklch(0.55 0.01 240);
+  --color-gray-600: oklch(0.45 0.01 240);
+  --color-gray-700: oklch(0.37 0.01 240);
+  --color-gray-800: oklch(0.26 0.01 240);
+  --color-gray-900: oklch(0.15 0.01 240);
+  
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Smooth transitions for theme switching */
+  html {
+    transition: color 0.3s ease, background-color 0.3s ease;
+  }
+
+  /* Prevent transitions during initial load */
+  html:not(.dark):not(.light) * {
+    transition: none !important;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    @apply transition-colors duration-200;
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom utilities */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Hide number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
 }
