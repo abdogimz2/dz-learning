@@ -206,10 +206,20 @@ function SectionAccordion({ section, items, loading }) {
     green: "bg-green-500", purple: "bg-purple-500", orange: "bg-orange-500",
   };
 
+  const handleToggle = () => {
+    const opening = !open;
+    setOpen(opening);
+    // ✅ إبلاغ نظام المهام عند فتح درس أو تمرين لأول مرة
+    if (opening && items.length > 0) {
+      if (section.id === "lesson"   && window.__reportTaskAction) window.__reportTaskAction("lesson");
+      if (section.id === "exercise" && window.__reportTaskAction) window.__reportTaskAction("exercise");
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
         className="w-full p-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
       >
         <div className="flex items-center gap-3">

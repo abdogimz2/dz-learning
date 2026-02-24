@@ -30,11 +30,14 @@ export default function FlashcardSession({ cards, onClose }) {
   const handleRating = async (rating) => {
     const pts = RATING_POINTS[rating] || 0;
 
-    // ✅ إضافة النقاط
+    // ✅ إبلاغ نظام المهام اليومية
+    if (window.__reportTaskAction) {
+      window.__reportTaskAction("qa");
+    }
+
+    // ✅ نقاط الـ flashcard (اختيارية - يمكن إزالتها إذا أردت فقط نقاط المهام)
     if (pts > 0 && user?.id) {
       try {
-        const { addPoints } = await import("@/lib/points");
-        await addPoints(user.id, `flashcard_${rating}`);
         setTotalEarned((prev) => prev + pts);
       } catch (err) {
         console.error("خطأ في النقاط:", err);
