@@ -25,10 +25,10 @@ export default function Footer() {
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-white">
-                  المنصة التعليمية الجزائرية
+                  منصة مايندلي التعليمية
                 </h3>
                 <p className="text-secondary text-sm mt-1">
-                  منصة المستقبل التعليمي
+                  معا للتحقيق التطور التعليمي
                 </p>
               </div>
             </div>
@@ -87,7 +87,7 @@ export default function Footer() {
                 { label: "الرئيسية", href: "/", icon: "🏠" },
                 { label: "جميع المواد", href: "/subjects", icon: "📚" },
                 { label: "الاختبارات", href: "/exams", icon: "📝" },
-                { label: "المتصدرون", href: "/leaderboard", icon: "🏆" },
+                
                 { label: "المدونة", href: "/blog", icon: "✍️" },
                 { label: "من نحن", href: "/about", icon: "ℹ️" },
               ].map((item) => (

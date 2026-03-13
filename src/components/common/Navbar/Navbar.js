@@ -11,7 +11,7 @@ export default function Navbar() {
   const navItems = [
     { label: "الرئيسية", href: "/" },
     { label: "المواد", href: "/subjects" },
-    { label: "المتصدرون", href: "/leaderboard" },
+    
     { label: "من نحن", href: "/about" },
     { label: "اتصل بنا", href: "/contact" },
   ];
@@ -24,7 +24,7 @@ export default function Navbar() {
           <Link href="/" className="flex items-center gap-2.5">
             <School className="h-7 w-7 text-primary" />
             <span className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-              المنصة التعليمية الجزائرية
+              منصة مايندلي التعليمية 
             </span>
           </Link>
 

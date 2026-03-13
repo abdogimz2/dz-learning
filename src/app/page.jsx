@@ -96,7 +96,7 @@ export default function Home() {
           >
             <StatItem number="500+" label="درس تعليمي" delay={1.2} />
             <StatItem number="1000+" label="سؤال اختباري" delay={1.4} />
-            <StatItem number="24/7" label="دعم متواصل" delay={1.6} />
+            <StatItem number="24//7" label="دعم متواصل" delay={1.6} />
           </motion.div>
         </div>
       </motion.section>
