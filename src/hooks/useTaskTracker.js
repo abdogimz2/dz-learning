@@ -17,13 +17,26 @@ function getUserLevel(user) {
     const branch    = user.branchType|| "";
     const specialty = user.specialty || "";
     if (year === "1sec") return branch === "arts" ? "1sec_arts" : "1sec_science";
-    if (branch === "science_main") {
+    if (year === "2sec") {
+      if (branch === "science_main" || branch === "science") {
+        if (specialty === "tech")           return "2sec_science_tech";
+        if (specialty === "تسيير واقتصاد") return "2sec_science_eco";
+        if (specialty === "رياضيات")        return "2sec_science_math";
+        return "2sec_science_exp";
+      }
+      if (branch === "arts_main" || branch === "arts") {
+        return specialty === "lang" ? "2sec_arts_lang" : "2sec_arts_philo";
+      }
+    }
+    if (branch === "science_main" || branch === "science") {
       if (specialty === "tech")           return "science_tech";
       if (specialty === "تسيير واقتصاد") return "science_eco";
       if (specialty === "رياضيات")        return "science_math";
       return "science_exp";
     }
-    if (branch === "arts_main") return specialty === "lang" ? "arts_lang" : "arts_philo";
+    if (branch === "arts_main" || branch === "arts") {
+      return specialty === "lang" ? "arts_lang" : "arts_philo";
+    }
   }
   return null;
 }

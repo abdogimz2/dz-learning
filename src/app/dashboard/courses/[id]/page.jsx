@@ -1,13 +1,13 @@
 // src/app/dashboard/courses/[id]/page.jsx
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, ChevronDown, ArrowLeft, Award,
   FileText, PlayCircle, HelpCircle,
-  CheckCircle2, Loader2, Download, Eye,
+  CheckCircle2, Loader2, Download, Eye, X,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
@@ -17,32 +17,23 @@ import FlashcardSession from "@/components/FlashcardSession";
 
 // ─── قاموس المواد حسب level المحفوظ في Firestore ─────────────────────────────
 const SUBJECTS_BY_LEVEL = {
-  // المتوسط
-  middle: ["رياضيات","لغة عربية","فيزياء","علوم طبيعية","فرنسية","إنجليزية","تاريخ","جغرافيا","تربية إسلامية","تربية مدنية"],
-
-  // السنة أولى — جذع علوم وتكنولوجيا
-  "1sec_science": ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم","إعلام آلي"],
-
-  // السنة أولى — جذع آداب
-  "1sec_arts": ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم","إعلام آلي"],
-
-  // علوم تجريبية
-  "science_exp": ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم طبيعية"],
-
-  // رياضيات
-  "science_math": ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم طبيعية"],
-
-  // تقني رياضي — مواد مشتركة
-  "science_tech": ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء"],
-
-  // تسيير واقتصاد
-  "science_eco": ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","محاسبة","اقتصاد","قانون"],
-
-  // آداب وفلسفة
-  "arts_philo": ["لغة عربية","فرنسية","إنجليزية","رياضيات","فلسفة","تاريخ","جغرافيا","تربية إسلامية"],
-
-  // لغات أجنبية — مواد مشتركة (اللغة الثالثة تُضاف ديناميكياً)
-  "arts_lang": ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية"],
+  middle:               ["رياضيات","لغة عربية","فيزياء","علوم طبيعية","فرنسية","إنجليزية","تاريخ","جغرافيا","تربية إسلامية","تربية مدنية"],
+  "1sec_science":       ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم","إعلام آلي"],
+  "1sec_arts":          ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم","إعلام آلي"],
+  // السنة الثانية
+  "2sec_science_exp":   ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم طبيعية"],
+  "2sec_science_math":  ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم طبيعية"],
+  "2sec_science_tech":  ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء"],
+  "2sec_science_eco":   ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","محاسبة","اقتصاد","قانون"],
+  "2sec_arts_philo":    ["لغة عربية","فرنسية","إنجليزية","رياضيات","فلسفة","تاريخ","جغرافيا","تربية إسلامية"],
+  "2sec_arts_lang":     ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية"],
+  // السنة الثالثة
+  science_exp:          ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم طبيعية"],
+  science_math:         ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم طبيعية"],
+  science_tech:         ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء"],
+  science_eco:          ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","محاسبة","اقتصاد","قانون"],
+  arts_philo:           ["لغة عربية","فرنسية","إنجليزية","رياضيات","فلسفة","تاريخ","جغرافيا","تربية إسلامية"],
+  arts_lang:            ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية"],
 };
 
 // ─── تحديد level من بيانات المستخدم المحفوظة في Firestore ────────────────────
@@ -55,31 +46,41 @@ const SUBJECTS_BY_LEVEL = {
 function getUserLevel(user) {
   if (!user) return null;
 
-  // متوسط
   if (user.level === "middle") return "middle";
 
-  // ثانوي
   if (user.level === "secondary") {
-    const year      = user.year;
-    const branch    = user.branchType;
+    const year      = user.year      || "";
+    const branch    = user.branchType|| "";
     const specialty = user.specialty || "";
 
-    // السنة الأولى
     if (year === "1sec") {
       return branch === "arts" ? "1sec_arts" : "1sec_science";
     }
 
-    // السنة الثانية أو الثالثة
-    if (branch === "science_main" || branch === "science") {
-      if (specialty === "tech")              return "science_tech";
-      if (specialty === "تسيير واقتصاد")    return "science_eco";
-      if (specialty === "رياضيات")           return "science_math";
-      return "science_exp"; // علوم تجريبية أو افتراضي
+    // ✅ السنة الثانية — prefix "2sec_"
+    if (year === "2sec") {
+      if (branch === "science_main" || branch === "science") {
+        if (specialty === "tech")           return "2sec_science_tech";
+        if (specialty === "تسيير واقتصاد") return "2sec_science_eco";
+        if (specialty === "رياضيات")        return "2sec_science_math";
+        return "2sec_science_exp";
+      }
+      if (branch === "arts_main" || branch === "arts") {
+        if (specialty === "lang")           return "2sec_arts_lang";
+        return "2sec_arts_philo";
+      }
     }
 
+    // ✅ السنة الثالثة — بدون prefix
+    if (branch === "science_main" || branch === "science") {
+      if (specialty === "tech")           return "science_tech";
+      if (specialty === "تسيير واقتصاد") return "science_eco";
+      if (specialty === "رياضيات")        return "science_math";
+      return "science_exp";
+    }
     if (branch === "arts_main" || branch === "arts") {
-      if (specialty === "lang")              return "arts_lang";
-      return "arts_philo"; // آداب وفلسفة أو افتراضي
+      if (specialty === "lang")           return "arts_lang";
+      return "arts_philo";
     }
   }
 
@@ -157,43 +158,225 @@ const SEMESTERS = [
   { id: "final", label: "الفصل النهائي (بكالوريا)" },
 ];
 
-// ─── مكون عنصر المحتوى ───────────────────────────────────────────────────────
-function ContentItem({ item }) {
+// ─── عارض الملفات مع زوم وصفحة كاملة ────────────────────────────────────────
+function FileViewer({ urls, title, onClose }) {
+  const [current, setCurrent] = useState(0);
+  const [zoom,    setZoom]    = useState(1);
+
+  const url   = urls[current];
+  const total = urls.length;
+  const isPdf = url?.toLowerCase().includes(".pdf") || url?.includes("/raw/");
+
+  // إعادة الزوم عند تغيير الملف
+  useEffect(() => { setZoom(1); }, [current]);
+
+  // فتح في تبويب جديد بحجم كامل
+  const openFullPage = () => window.open(url, "_blank");
+
+  const zoomIn  = () => setZoom(z => Math.min(3, parseFloat((z + 0.25).toFixed(2))));
+  const zoomOut = () => setZoom(z => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))));
+  const resetZoom = () => setZoom(1);
+
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 flex items-center justify-between gap-4 hover:border-primary/30 hover:shadow-md transition-all">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        {item.type === "lesson"
-          ? <PlayCircle className="text-blue-500 flex-shrink-0" size={22} />
-          : <FileText className="text-emerald-500 flex-shrink-0" size={22} />
-        }
-        <div className="min-w-0">
-          <p className="font-bold text-gray-800 dark:text-gray-200 text-sm truncate">{item.title}</p>
-          {item.description && (
-            <p className="text-xs text-gray-400 mt-0.5 truncate">{item.description}</p>
+    <div className="fixed inset-0 bg-black/90 z-50 flex flex-col" dir="rtl">
+
+      {/* ─── شريط التحكم العلوي ─── */}
+      <div className="flex items-center justify-between px-3 py-2 bg-gray-950 border-b border-gray-800 flex-shrink-0 gap-2 flex-wrap">
+
+        {/* يسار: إغلاق + عنوان */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <button onClick={onClose}
+            className="p-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-red-600 hover:text-white transition-all flex-shrink-0">
+            <X size={16}/>
+          </button>
+          <p className="font-bold text-white text-sm truncate">{title}</p>
+          {total > 1 && (
+            <span className="text-xs text-gray-400 flex-shrink-0 bg-gray-800 px-2 py-1 rounded-lg">
+              {current + 1}/{total}
+            </span>
           )}
         </div>
-      </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
-        {item.fileUrl && (
-          <>
-            <a href={item.fileUrl} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all">
-              <Eye size={14} /> عرض
-            </a>
-            <a href={item.fileUrl} download
-              className="flex items-center gap-1.5 px-3 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-hover transition-all shadow-sm">
-              <Download size={14} /> تحميل
-            </a>
-          </>
+
+        {/* وسط: أدوات الزوم (للصور فقط) */}
+        {!isPdf && (
+          <div className="flex items-center gap-1 bg-gray-800 rounded-xl px-2 py-1 flex-shrink-0">
+            <button onClick={zoomOut} disabled={zoom <= 0.5}
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:bg-gray-700 disabled:opacity-30 transition-all font-black text-lg">
+              −
+            </button>
+            <button onClick={resetZoom}
+              className="px-2 py-1 text-xs font-black text-gray-300 hover:text-white min-w-[3rem] text-center">
+              {Math.round(zoom * 100)}%
+            </button>
+            <button onClick={zoomIn} disabled={zoom >= 3}
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:bg-gray-700 disabled:opacity-30 transition-all font-black text-lg">
+              +
+            </button>
+          </div>
         )}
-        {item.solutionUrl && (
-          <a href={item.solutionUrl} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all">
-            <CheckCircle2 size={14} /> الحل
+
+        {/* يمين: أزرار الإجراءات */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* فتح في صفحة كاملة */}
+          <button onClick={openFullPage}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 text-gray-200 rounded-lg text-xs font-bold hover:bg-gray-600 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+            </svg>
+            فتح كاملاً
+          </button>
+          <a href={url} download
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary-hover transition-all">
+            <Download size={13}/> تحميل
           </a>
+        </div>
+      </div>
+
+      {/* ─── أزرار الملفات ─── */}
+      {total > 1 && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-gray-900 border-b border-gray-800 overflow-x-auto flex-shrink-0">
+          <button onClick={() => setCurrent(i => Math.max(0, i - 1))} disabled={current === 0}
+            className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-30 text-xs font-bold transition-all">
+            ‹ السابق
+          </button>
+          <div className="flex gap-1.5 flex-1 overflow-x-auto">
+            {urls.map((_, i) => (
+              <button key={i} onClick={() => setCurrent(i)}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  current === i ? "bg-primary text-white" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                }`}>
+                ملف {i + 1}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => setCurrent(i => Math.min(total - 1, i + 1))} disabled={current === total - 1}
+            className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:opacity-30 text-xs font-bold transition-all">
+            التالي ›
+          </button>
+        </div>
+      )}
+
+      {/* ─── محتوى الملف ─── */}
+      <div className="flex-1 overflow-auto">
+        {isPdf ? (
+          // PDF: لا حاجة لزوم، المتصفح يتحكم
+          <iframe src={url} className="w-full h-full border-0 min-h-[600px]"
+            title={`${title} - ملف ${current + 1}`}/>
+        ) : (
+          // صورة مع زوم
+          <div className="w-full h-full flex items-start justify-center p-4 overflow-auto"
+            style={{ cursor: zoom > 1 ? "grab" : "default" }}>
+            <img
+              src={url}
+              alt={`${title} - ملف ${current + 1}`}
+              style={{
+                transform:     `scale(${zoom})`,
+                transformOrigin: "top center",
+                transition:    "transform 0.2s ease",
+                maxWidth:      "100%",
+                borderRadius:  "12px",
+                boxShadow:     "0 25px 50px rgba(0,0,0,0.5)",
+              }}
+            />
+          </div>
         )}
       </div>
+
+      {/* ─── شريط الزوم السفلي للصور ─── */}
+      {!isPdf && (
+        <div className="flex items-center justify-center gap-4 py-2 bg-gray-950 border-t border-gray-800 flex-shrink-0">
+          <input type="range" min="50" max="300" value={zoom * 100}
+            onChange={(e) => setZoom(Number(e.target.value) / 100)}
+            className="w-40 accent-primary cursor-pointer"/>
+          <span className="text-xs text-gray-400 font-bold w-10 text-center">{Math.round(zoom * 100)}%</span>
+          <button onClick={resetZoom} className="text-xs text-gray-400 hover:text-white transition-colors">إعادة</button>
+        </div>
+      )}
     </div>
+  );
+}
+
+// ─── مكون عنصر المحتوى ───────────────────────────────────────────────────────
+function ContentItem({ item }) {
+  const [viewerOpen,    setViewerOpen]    = useState(false);
+  const [viewerUrls,    setViewerUrls]    = useState([]);
+  const [viewerTitle,   setViewerTitle]   = useState("");
+  const [solutionOpen,  setSolutionOpen]  = useState(false);
+
+  // جمع كل الملفات الرئيسية — يدعم fileUrls[] والملف القديم fileUrl
+  const mainUrls = item.fileUrls?.length > 0
+    ? item.fileUrls
+    : item.fileUrl ? [item.fileUrl] : [];
+
+  // جمع كل ملفات الحل
+  const solUrls = item.solutionUrls?.length > 0
+    ? item.solutionUrls
+    : item.solutionUrl ? [item.solutionUrl] : [];
+
+  const openViewer = (urls, title) => {
+    setViewerUrls(urls);
+    setViewerTitle(title);
+    setViewerOpen(true);
+  };
+
+  return (
+    <>
+      {/* عارض الملفات الرئيسية */}
+      {viewerOpen && (
+        <FileViewer urls={viewerUrls} title={viewerTitle} onClose={() => setViewerOpen(false)}/>
+      )}
+      {/* عارض ملفات الحل */}
+      {solutionOpen && (
+        <FileViewer urls={solUrls} title={`حل — ${item.title}`} onClose={() => setSolutionOpen(false)}/>
+      )}
+
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 hover:border-primary/30 hover:shadow-md transition-all">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {item.type === "lesson"
+              ? <PlayCircle className="text-blue-500 flex-shrink-0" size={22}/>
+              : <FileText   className="text-emerald-500 flex-shrink-0" size={22}/>
+            }
+            <div className="min-w-0">
+              <p className="font-bold text-gray-800 dark:text-gray-200 text-sm truncate">{item.title}</p>
+              {item.description && (
+                <p className="text-xs text-gray-400 mt-0.5 truncate">{item.description}</p>
+              )}
+              {mainUrls.length > 1 && (
+                <p className="text-xs text-primary font-bold mt-0.5">{mainUrls.length} ملفات</p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+            {/* زر عرض الملفات الرئيسية */}
+            {mainUrls.length > 0 && (
+              <button onClick={() => openViewer(mainUrls, item.title)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all">
+                <Eye size={14}/>
+                {mainUrls.length > 1 ? `عرض (${mainUrls.length})` : "عرض"}
+              </button>
+            )}
+            {/* تحميل مباشر للملف الأول */}
+            {mainUrls.length > 0 && (
+              <a href={mainUrls[0]} download
+                className="flex items-center gap-1.5 px-3 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-hover transition-all shadow-sm">
+                <Download size={14}/> تحميل
+              </a>
+            )}
+            {/* زر الحل */}
+            {solUrls.length > 0 && (
+              <button onClick={() => setSolutionOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all">
+                <CheckCircle2 size={14}/>
+                {solUrls.length > 1 ? `الحل (${solUrls.length})` : "الحل"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -267,8 +450,11 @@ function SectionAccordion({ section, items, loading }) {
 
 // ─── الصفحة الرئيسية ──────────────────────────────────────────────────────────
 export default function CourseDetailPage() {
-  const params    = useParams();
-  const subjectId = params.id?.toString() || "";
+  const params       = useParams();
+  const searchParams = useSearchParams();
+  const subjectId    = params.id?.toString() || "";
+  const reviewCardId = searchParams.get("review");   // معرف السؤال المراد مراجعته
+  const autoOpen     = searchParams.get("autoopen"); // فتح تلقائي
 
   const user = useAuthStore((state) => state.user);
 
@@ -276,7 +462,8 @@ export default function CourseDetailPage() {
   const [content,  setContent]  = useState({});
   const [loading,  setLoading]  = useState(false);
   const [fetched,  setFetched]  = useState({});
-  const [flashcardCards, setFlashcardCards] = useState(null);
+  const [flashcardCards,      setFlashcardCards]      = useState(null);
+  const [flashcardStartIndex, setFlashcardStartIndex] = useState(0);
 
   const userLevel   = getUserLevel(user);
   const subjectName = getSubjectName(subjectId, userLevel, user);
@@ -324,6 +511,30 @@ export default function CourseDetailPage() {
     fetchContent();
   }, [activeSemester, userLevel, subjectName]);
 
+  // ✅ لو جاء من إشعار مراجعة — نجلب كل الفصول للبحث عن السؤال
+  useEffect(() => {
+    if (!reviewCardId || !userLevel || !subjectName) return;
+    const SEMS = ["s1", "s2", "final"];
+    SEMS.forEach(sem => {
+      if (!fetched[sem]) setActiveSemester(sem);
+    });
+  }, [reviewCardId, userLevel, subjectName]);
+  useEffect(() => {
+    if (!autoOpen || !reviewCardId) return;
+
+    // نبحث في كل الفصول المحملة عن السؤال
+    for (const sem of Object.values(content)) {
+      const qaList = sem?.qa || [];
+      if (qaList.length === 0) continue;
+      const idx = qaList.findIndex(c => c.id === reviewCardId);
+      if (idx !== -1) {
+        setFlashcardStartIndex(idx);
+        setFlashcardCards(qaList);
+        return;
+      }
+    }
+  }, [content, reviewCardId, autoOpen]);
+
   if (!user) {
     return (
       <div className="h-[60vh] flex items-center justify-center">
@@ -348,7 +559,8 @@ export default function CourseDetailPage() {
       {flashcardCards && (
         <FlashcardSession
           cards={flashcardCards}
-          onClose={() => setFlashcardCards(null)}
+          startIndex={flashcardStartIndex}
+          onClose={() => { setFlashcardCards(null); setFlashcardStartIndex(0); }}
         />
       )}
 
@@ -440,7 +652,7 @@ export default function CourseDetailPage() {
                   </div>
                   <button
                     disabled={loading || qaItems.length === 0}
-                    onClick={() => setFlashcardCards(qaItems)}
+                    onClick={() => { setFlashcardStartIndex(0); setFlashcardCards(qaItems); }}
                     className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed text-sm"
                   >
                     <Eye size={16} />

@@ -32,7 +32,7 @@ export default function LoginPage() {
     if (!hydrated) return; // انتظر التحميل
     if (!isAuthenticated || !user) return; // مش مسجل — ابقى هنا
 
-    if (user.role === "admin") {
+    if (user.role === "admin" || user.role === "sub_admin") {
       router.replace("/admin");
       return;
     }

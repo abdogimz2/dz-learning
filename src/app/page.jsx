@@ -34,9 +34,9 @@ export default function Home() {
               <span className="inline-block mr-3">🎓</span>
               <TypeAnimation
                 sequence={[
-                  "المنصة التعليمية الجزائرية",
+                  "منصة مايندلي التعليمية",
                   1200,
-                  "منصة المستقبل التعليمي",
+                  "بوابتك للتميز الدراسي",
                   1200,
                   "بوابتك للتميز الدراسي",
                   1200,

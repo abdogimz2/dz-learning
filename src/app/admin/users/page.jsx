@@ -21,17 +21,51 @@ const STATUS_CONFIG = {
   suspended:            { label: "موقوف",         color: "red",     icon: XCircle },
 };
 
-const LEVEL_LABELS = {
-  middle:        "التعليم المتوسط",
-  "1sec_science":"سنة أولى — علوم",
-  "1sec_arts":   "سنة أولى — آداب",
-  science_exp:   "علوم تجريبية",
-  science_math:  "رياضيات",
-  science_tech:  "تقني رياضي",
-  science_eco:   "تسيير واقتصاد",
-  arts_philo:    "آداب وفلسفة",
-  arts_lang:     "لغات أجنبية",
-};
+// ─── دالة تحسب المستوى الكامل من بيانات المستخدم ──────────────────────────
+function getUserFullLabel(user) {
+  if (!user) return "—";
+
+  if (user.level === "middle") return "التعليم المتوسط";
+
+  if (user.level === "secondary") {
+    const year      = user.year       || "";
+    const branch    = user.branchType || "";
+    const specialty = user.specialty  || "";
+
+    // السنة الأولى
+    if (year === "1sec") {
+      return branch === "arts"
+        ? "السنة الأولى ثانوي — آداب"
+        : "السنة الأولى ثانوي — علوم وتكنولوجيا";
+    }
+
+    // السنة الثانية
+    if (year === "2sec") {
+      const label = {
+        tech:               "السنة الثانية — تقني رياضي",
+        "تسيير واقتصاد":   "السنة الثانية — تسيير واقتصاد",
+        "رياضيات":          "السنة الثانية — رياضيات",
+        lang:               "السنة الثانية — لغات أجنبية",
+      }[specialty];
+      if (label) return label;
+      if (branch === "arts_main" || branch === "arts") return "السنة الثانية — آداب وفلسفة";
+      return "السنة الثانية — علوم تجريبية";
+    }
+
+    // السنة الثالثة
+    const label3 = {
+      tech:               "السنة الثالثة — تقني رياضي",
+      "تسيير واقتصاد":   "السنة الثالثة — تسيير واقتصاد",
+      "رياضيات":          "السنة الثالثة — رياضيات",
+      lang:               "السنة الثالثة — لغات أجنبية",
+    }[specialty];
+    if (label3) return label3;
+    if (branch === "arts_main" || branch === "arts") return "السنة الثالثة — آداب وفلسفة";
+    return "السنة الثالثة — علوم تجريبية";
+  }
+
+  return user.level || "—";
+}
 
 // ─── بطاقة مستخدم ────────────────────────────────────────────────────────────
 function UserCard({ user, onStatusChange, updating }) {
@@ -72,7 +106,7 @@ function UserCard({ user, onStatusChange, updating }) {
               </span>
               <span className="text-xs text-gray-400 flex items-center gap-1">
                 <GraduationCap size={12} />
-                {LEVEL_LABELS[user.level] || user.level || "غير محدد"}
+                {getUserFullLabel(user)}
               </span>
               {user.role === "admin" && (
                 <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1">
@@ -138,8 +172,8 @@ function UserCard({ user, onStatusChange, updating }) {
               {[
                 { icon: Mail,          label: "البريد",      value: user.email },
                 { icon: Phone,         label: "الهاتف",      value: user.phone || "—" },
-                { icon: GraduationCap, label: "المستوى",     value: LEVEL_LABELS[user.level] || user.level || "—" },
-                { icon: GraduationCap, label: "التخصص",      value: user.specialty || user.branchType || "—" },
+                { icon: GraduationCap, label: "المستوى",     value: getUserFullLabel(user) },
+                { icon: GraduationCap, label: "التخصص",      value: user.subSpecialty || "—" },
                 { icon: Clock,         label: "تاريخ التسجيل",value: user.createdAt ? new Date(user.createdAt?.seconds ? user.createdAt.seconds * 1000 : user.createdAt).toLocaleDateString("ar-DZ") : "—" },
                 { icon: Shield,        label: "الدور",       value: user.role === "admin" ? "مسؤول" : "طالب" },
               ].map((item, i) => (

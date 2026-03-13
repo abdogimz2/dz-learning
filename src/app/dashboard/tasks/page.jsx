@@ -7,6 +7,7 @@ import { Target, Star, CheckCircle, Loader2, Trophy, Lock, AlertCircle, X } from
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { useAuthStore } from "@/store/authStore";
+import { useTaskStore } from "@/store/useTaskStore"; // ✅ ملف جديد — انظر التعليمات أدناه
 
 function getUserLevel(user) {
   if (!user) return null;
@@ -16,13 +17,26 @@ function getUserLevel(user) {
     const branch    = user.branchType|| "";
     const specialty = user.specialty || "";
     if (year === "1sec") return branch === "arts" ? "1sec_arts" : "1sec_science";
-    if (branch === "science_main") {
+    if (year === "2sec") {
+      if (branch === "science_main" || branch === "science") {
+        if (specialty === "tech")           return "2sec_science_tech";
+        if (specialty === "تسيير واقتصاد") return "2sec_science_eco";
+        if (specialty === "رياضيات")        return "2sec_science_math";
+        return "2sec_science_exp";
+      }
+      if (branch === "arts_main" || branch === "arts") {
+        return specialty === "lang" ? "2sec_arts_lang" : "2sec_arts_philo";
+      }
+    }
+    if (branch === "science_main" || branch === "science") {
       if (specialty === "tech")           return "science_tech";
       if (specialty === "تسيير واقتصاد") return "science_eco";
       if (specialty === "رياضيات")        return "science_math";
       return "science_exp";
     }
-    if (branch === "arts_main") return specialty === "lang" ? "arts_lang" : "arts_philo";
+    if (branch === "arts_main" || branch === "arts") {
+      return specialty === "lang" ? "arts_lang" : "arts_philo";
+    }
   }
   return null;
 }
@@ -32,11 +46,50 @@ function getTodayStr() { return new Date().toISOString().split("T")[0]; }
 const TYPE_ICONS  = { qa: "❓", lesson: "📖", exercise: "📝", combined: "🎯" };
 const TYPE_LABELS = { qa: "سؤال", lesson: "درس", exercise: "تمرين", combined: "مهمة مجمّعة" };
 
+// ─── مغلّف يتتبع البطاقات المرئية ────────────────────────────────────────────
+function AllTasksWrapper({ tasks, progMap, userId }) {
+  const { isTaskClosed, countClosed, cleanOldTasks } = useTaskStore();
+
+  // تنظيف المهام القديمة عند أول تحميل
+  useEffect(() => {
+    if (userId) cleanOldTasks(userId, tasks.map(t => t.id));
+  }, [userId, tasks.length]);
+
+  const closedCount = countClosed(userId, tasks.map(t => t.id));
+  const allClosed   = tasks.length > 0 && closedCount >= tasks.length;
+
+  if (allClosed) {
+    return (
+      <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
+        className="text-center py-16 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800">
+        <div className="text-6xl mb-4">🎉</div>
+        <p className="text-emerald-500 font-black text-2xl">لقد أنهيت جميع مهامك اليوم!</p>
+        <p className="text-gray-400 text-sm mt-2">أحسنت! تحقق غداً لمهام جديدة 🚀</p>
+      </motion.div>
+    );
+  }
+
+  return (
+    <AnimatePresence>
+      {tasks.map(task => (
+        <TaskCard
+          key={task.id}
+          task={task}
+          initialProgress={progMap[task.id]}
+          userId={userId}
+        />
+      ))}
+    </AnimatePresence>
+  );
+}
+
 // ─── بطاقة مهمة واحدة ────────────────────────────────────────────────────────
-function TaskCard({ task, initialProgress }) {
+function TaskCard({ task, initialProgress, userId }) {
+  const { isTaskClosed, closeTask } = useTaskStore();
   const [progress,  setProgress]  = useState(initialProgress || { count: 0, completed: false });
   const [rewarding, setRewarding] = useState(false);
-  const [hidden,    setHidden]    = useState(false);
+
+  const hidden = isTaskClosed(userId, task.id);
 
   const done    = progress.completed === true;
   const target  = task.targetCount || 1;
@@ -61,6 +114,11 @@ function TaskCard({ task, initialProgress }) {
       window.removeEventListener("taskCompleted", onDone);
     };
   }, [task.id]);
+
+  // ✅ إغلاق عبر Zustand persist — يبقى بعد الرفريش تلقائياً
+  const handleClose = () => {
+    closeTask(userId, task.id);
+  };
 
   if (hidden) return null;
 
@@ -145,8 +203,7 @@ function TaskCard({ task, initialProgress }) {
                 <p className="text-sm text-emerald-600">حصلت على {task.points} نقطة</p>
               </div>
             </div>
-            {/* ✅ زر الإغلاق */}
-            <button onClick={() => setHidden(true)}
+            <button onClick={handleClose}
               className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-all">
               <X size={16}/> إغلاق
             </button>
@@ -268,15 +325,7 @@ export default function DailyTasksPage() {
           <p className="text-gray-400 text-sm mt-2">تحقق غداً 🚀</p>
         </div>
       ) : (
-        <AnimatePresence>
-          {tasks.map(task => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              initialProgress={progMap[task.id]}
-            />
-          ))}
-        </AnimatePresence>
+        <AllTasksWrapper tasks={tasks} progMap={progMap} userId={user?.id}/>
       )}
     </div>
   );

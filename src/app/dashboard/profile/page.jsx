@@ -27,17 +27,48 @@ const WILAYA_LIST = [
   "غرداية","غليزان",
 ];
 
-const LEVEL_LABELS = {
-  middle:        "التعليم المتوسط",
-  "1sec_science":"السنة الأولى — علوم وتكنولوجيا",
-  "1sec_arts":   "السنة الأولى — آداب",
-  science_exp:   "السنة 2/3 — علوم تجريبية",
-  science_math:  "السنة 2/3 — رياضيات",
-  science_tech:  "السنة 2/3 — تقني رياضي",
-  science_eco:   "السنة 2/3 — تسيير واقتصاد",
-  arts_philo:    "السنة 2/3 — آداب وفلسفة",
-  arts_lang:     "السنة 2/3 — لغات أجنبية",
-};
+// ─── دالة تحسب المستوى الكامل من بيانات المستخدم ──────────────────────────
+function getUserFullLabel(user) {
+  if (!user) return "—";
+
+  if (user.level === "middle") return "التعليم المتوسط";
+
+  if (user.level === "secondary") {
+    const year      = user.year       || "";
+    const branch    = user.branchType || "";
+    const specialty = user.specialty  || "";
+
+    if (year === "1sec") {
+      return branch === "arts"
+        ? "السنة الأولى ثانوي — آداب"
+        : "السنة الأولى ثانوي — علوم وتكنولوجيا";
+    }
+
+    if (year === "2sec") {
+      const label = {
+        tech:               "السنة الثانية — تقني رياضي",
+        "تسيير واقتصاد":   "السنة الثانية — تسيير واقتصاد",
+        "رياضيات":          "السنة الثانية — رياضيات",
+        lang:               "السنة الثانية — لغات أجنبية",
+      }[specialty];
+      if (label) return label;
+      if (branch === "arts_main" || branch === "arts") return "السنة الثانية — آداب وفلسفة";
+      return "السنة الثانية — علوم تجريبية";
+    }
+
+    const label3 = {
+      tech:               "السنة الثالثة — تقني رياضي",
+      "تسيير واقتصاد":   "السنة الثالثة — تسيير واقتصاد",
+      "رياضيات":          "السنة الثالثة — رياضيات",
+      lang:               "السنة الثالثة — لغات أجنبية",
+    }[specialty];
+    if (label3) return label3;
+    if (branch === "arts_main" || branch === "arts") return "السنة الثالثة — آداب وفلسفة";
+    return "السنة الثالثة — علوم تجريبية";
+  }
+
+  return user.level || "—";
+}
 
 export default function ProfilePage() {
   const { user, setUser } = useAuthStore();
@@ -182,8 +213,8 @@ export default function ProfilePage() {
 
   if (!user) return null;
 
-  const levelLabel    = LEVEL_LABELS[user.level] || user.level || "—";
-  const specialtyLabel = user.specialty || user.branchType || "—";
+  const levelLabel    = getUserFullLabel(user);
+  const specialtyLabel = user?.subSpecialty || "—";
 
   return (
     <div className="max-w-2xl mx-auto space-y-6" dir="rtl">

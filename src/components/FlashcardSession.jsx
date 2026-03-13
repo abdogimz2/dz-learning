@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   HelpCircle, Eye, RotateCcw, X, Trophy, Star,
 } from "lucide-react";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore }       from "@/store/authStore";
+import { useRepetitionStore } from "@/store/useRepetitionStore";
 
 const RATING_POINTS = {
   easy:  10,
@@ -15,16 +16,18 @@ const RATING_POINTS = {
   again:  0,
 };
 
-export default function FlashcardSession({ cards, onClose }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+export default function FlashcardSession({ cards, onClose, startIndex = 0 }) {
+  const [currentIndex, setCurrentIndex] = useState(startIndex);
   const [flipped,      setFlipped]      = useState(false);
   const [results,      setResults]      = useState([]);
   const [finished,     setFinished]     = useState(false);
   const [totalEarned,  setTotalEarned]  = useState(0);
 
-  const user    = useAuthStore((state) => state.user);
-  const current = cards[currentIndex];
-  const total   = cards.length;
+  const user             = useAuthStore((state) => state.user);
+  const { scheduleCard } = useRepetitionStore();
+
+  const current  = cards[currentIndex];
+  const total    = cards.length;
   const progress = (currentIndex / total) * 100;
 
   const handleRating = async (rating) => {
@@ -35,13 +38,28 @@ export default function FlashcardSession({ cards, onClose }) {
       window.__reportTaskAction("qa");
     }
 
-    // ✅ نقاط الـ flashcard (اختيارية - يمكن إزالتها إذا أردت فقط نقاط المهام)
+    // ✅ نقاط الـ flashcard
     if (pts > 0 && user?.id) {
       try {
         setTotalEarned((prev) => prev + pts);
       } catch (err) {
         console.error("خطأ في النقاط:", err);
       }
+    }
+
+    // ✅ جدولة السؤال الصعب للمراجعة بعد 3 أيام
+    if (rating === "hard" && user?.id && current) {
+      scheduleCard({
+        id:               current.id,
+        userId:           user.id,
+        question:         current.question || current.title,
+        answer:           current.answer   || current.description,
+        qaType:           current.qaType   || "text",
+        questionImageUrl: current.questionImageUrl || null,
+        answerImageUrl:   current.answerImageUrl   || null,
+        subjectId:        current.subject  || null,
+        subjectName:      current.subject  || null,
+      });
     }
 
     setResults((prev) => [...prev, { cardId: current.id, rating, pts }]);
@@ -201,16 +219,28 @@ export default function FlashcardSession({ cards, onClose }) {
               {!flipped ? (
                 <>
                   <p className="text-xs font-bold text-orange-500 uppercase tracking-widest mb-4">السؤال</p>
-                  <p className="text-lg font-bold text-gray-800 dark:text-gray-200 leading-relaxed">
-                    {current.title}
-                  </p>
+                  {current.qaType === "image" && current.questionImageUrl ? (
+                    <img src={current.questionImageUrl} alt="سؤال"
+                      className="max-w-full max-h-56 object-contain rounded-xl"/>
+                  ) : (
+                    <p className="text-lg font-bold text-gray-800 dark:text-gray-200 leading-relaxed">
+                      {current.title}
+                    </p>
+                  )}
                 </>
               ) : (
                 <>
                   <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-4">الإجابة</p>
-                  <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed">
-                    {current.description}
-                  </p>
+                  {current.qaType === "image" && current.answerImageUrl ? (
+                    <img src={current.answerImageUrl} alt="جواب"
+                      className="max-w-full max-h-56 object-contain rounded-xl"/>
+                  ) : current.qaType === "image" ? (
+                    <p className="text-base text-gray-400 italic">لا توجد صورة للإجابة</p>
+                  ) : (
+                    <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed">
+                      {current.description}
+                    </p>
+                  )}
                 </>
               )}
             </motion.div>

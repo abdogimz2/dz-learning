@@ -8,9 +8,11 @@ import {
   LayoutDashboard, BookOpen, Trophy, ShoppingBag,
   Settings, LogOut, Menu, X, Bell, Search, Target,
 } from "lucide-react";
-import { SimpleThemeToggle } from "@/components/simple-theme-toggle";
-import { useAuthStore } from "@/store/authStore";
-import { useTaskTracker } from "@/hooks/useTaskTracker";
+import { SimpleThemeToggle }      from "@/components/simple-theme-toggle";
+import { useAuthStore }           from "@/store/authStore";
+import { useTaskTracker }         from "@/hooks/useTaskTracker";
+import { useRepetitionStore }     from "@/store/useRepetitionStore";
+import RepetitionNotification from "@/components/RepetitionNotification";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "الرئيسية",       href: "/dashboard" },
@@ -18,7 +20,7 @@ const sidebarItems = [
   { icon: Target,          label: "مهمة اليوم",      href: "/dashboard/tasks" },
   { icon: Trophy,          label: "لوحة المتصدرين", href: "/dashboard/leaderboard" },
   { icon: ShoppingBag,     label: "متجر النقاط",     href: "/dashboard/shop" },
-  { icon: Settings,        label: "الإعدادات",       href: "/dashboard/settings" },
+  { icon: Settings,        label: "الإعدادات",       href: "/dashboard/profile" },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -26,7 +28,11 @@ export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const router   = useRouter();
   const { user, isAuthenticated, logout, loading } = useAuthStore();
-  useTaskTracker(); // ✅ يسجّل window.__reportTaskAction في كل الصفحات
+  const { getDueCards } = useRepetitionStore();
+  useTaskTracker();
+
+  // عدد الأسئلة المستحقة للمراجعة
+  const dueCount = user?.id ? getDueCards(user.id).length : 0;
 
   useEffect(() => {
     if (!loading && !isAuthenticated) { router.replace("/login"); return; }
@@ -52,22 +58,26 @@ export default function DashboardLayout({ children }) {
     user.year  === "1sec"   ? "السنة الأولى ثانوي" :
     user.year  === "2sec"   ? "السنة الثانية ثانوي" : "السنة الثالثة ثانوي";
 
-  const NavLink = ({ item, onClick }) => (
-    <Link key={item.href} href={item.href} onClick={onClick}>
-      <span className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
-        pathname === item.href
-          ? "bg-primary text-white shadow-lg shadow-primary/20"
-          : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-      }`}>
-        <item.icon size={22} />
-        {item.label}
-        {/* نقطة تنبيه على مهمة اليوم */}
-        {item.href === "/dashboard/tasks" && pathname !== "/dashboard/tasks" && (
-          <span className="mr-auto w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse flex-shrink-0" />
-        )}
-      </span>
-    </Link>
-  );
+  const NavLink = ({ item, onClick }) => {
+    const isActive = item.href === "/dashboard"
+      ? pathname === "/dashboard"
+      : pathname.startsWith(item.href);
+    return (
+      <Link key={item.href} href={item.href} onClick={onClick}>
+        <span className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${
+          isActive
+            ? "bg-primary text-white shadow-lg shadow-primary/20"
+            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+        }`}>
+          <item.icon size={22} />
+          {item.label}
+          {item.href === "/dashboard/tasks" && !isActive && (
+            <span className="mr-auto w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse flex-shrink-0" />
+          )}
+        </span>
+      </Link>
+    );
+  };
 
   return (
     <div dir="rtl" className="min-h-screen bg-gray-50 dark:bg-gray-950 flex font-sans">
@@ -75,9 +85,9 @@ export default function DashboardLayout({ children }) {
       {/* Sidebar Desktop */}
       <aside className="hidden lg:flex flex-col w-72 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 sticky top-0 h-screen">
         <div className="p-6">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/20">DZ</div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">منصة التميز</span>
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <img src="/logo.png" alt="Mindly" className="w-14 h-14 object-contain flex-shrink-0"/>
+            <span className="text-3xl font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Mindly</span>
           </Link>
         </div>
 
@@ -109,10 +119,22 @@ export default function DashboardLayout({ children }) {
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full relative">
-              <Bell size={22} />
-              <span className="absolute top-2 left-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-900"></span>
-            </button>
+            {/* ─── جرس الإشعارات ─── */}
+            <div className="relative">
+              <button
+                id="bell-btn"
+                onClick={() => window.__toggleBellNotification?.()}
+                className="p-2 rounded-full relative transition-all text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+                <Bell size={22}/>
+                {dueCount > 0 ? (
+                  <span className="absolute -top-0.5 -left-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 border-2 border-white dark:border-gray-900">
+                    {dueCount}
+                  </span>
+                ) : (
+                  <span className="absolute top-2 left-2 w-2 h-2 bg-gray-300 rounded-full border-2 border-white dark:border-gray-900"/>
+                )}
+              </button>
+            </div>
             <SimpleThemeToggle />
             <div className="flex items-center gap-3 border-r pr-4 border-gray-200 dark:border-gray-800">
               <div className="text-left hidden sm:block">
@@ -133,6 +155,9 @@ export default function DashboardLayout({ children }) {
 
         <main className="p-4 md:p-8 flex-1">{children}</main>
       </div>
+
+      {/* ✅ إشعارات المراجعة المتباعدة */}
+      <RepetitionNotification/>
 
       {/* Mobile Sidebar */}
       <AnimatePresence>

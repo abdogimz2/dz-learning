@@ -1,155 +1,336 @@
+// src/app/dashboard/page.jsx
 "use client";
 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  BookOpen, Trophy, Zap, Clock, Star, PlayCircle,
+  BookOpen, Star, Trophy, Target, ArrowLeft,
+  Zap, CheckCircle, Clock, TrendingUp, Flame,
 } from "lucide-react";
+import { db } from "@/lib/firebase/config";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { useAuthStore } from "@/store/authStore";
 
-export default function DashboardPage() {
-  const user = useAuthStore((state) => state.user);
+// ─── نفس دالة getUserLevel من courses-page-v2 حرفياً ────────────────────────
+function getUserLevel(user) {
+  if (!user) return null;
+  if (user.level === "middle") return "middle";
+  if (user.level === "secondary") {
+    const year      = user.year      || "";
+    const branch    = user.branchType|| "";
+    const specialty = user.specialty || "";
+    if (year === "1sec") return branch === "arts" ? "1sec_arts" : "1sec_science";
+    // السنة الثانية والثالثة — نفس المنطق (courses-page-v2 لا تفرّق بينهما)
+    if (branch === "science_main") {
+      if (specialty === "tech")           return "science_tech";
+      if (specialty === "تسيير واقتصاد") return "science_eco";
+      if (specialty === "رياضيات")        return "science_math";
+      return "science_exp";
+    }
+    if (branch === "arts_main") return specialty === "lang" ? "arts_lang" : "arts_philo";
+  }
+  return null;
+}
 
-  const stats = [
-    { label: "المواد المشترك بها", value: "12", icon: BookOpen, color: "blue" },
-    { label: "رصيد النقاط", value: user?.points?.toLocaleString() || "0", icon: Star, color: "yellow" },
-    { label: "المركز الحالي", value: "#—", icon: Trophy, color: "orange" },
-    { label: "ساعات الدراسة", value: "0h", icon: Clock, color: "green" },
+// عدد المواد — مطابق تماماً لـ ALL_SUBJECTS في courses-page-v2
+const SUBJECTS_COUNT = {
+  middle:       10, // m1→m10
+  "1sec_science":10, // sc1→sc10
+  "1sec_arts":  10, // ac1→ac10
+  science_exp:   9, // se1→se9
+  science_math:  9, // sm1→sm9
+  science_tech:  8, // st1→st8 (+ subSpecialty ديناميكياً)
+  science_eco:  10, // ec1→ec10
+  arts_philo:    8, // ap1→ap8
+  arts_lang:     7, // al1→al7 (+ thirdLanguage ديناميكياً)
+};
+
+function getSubjectsCount(user) {
+  const level = getUserLevel(user);
+  if (!level) return 0;
+  let count = SUBJECTS_COUNT[level] || 0;
+  if (level === "science_tech" && user?.subSpecialty) count += 1;
+  if (level === "arts_lang"    && user?.thirdLanguage) count += 1;
+  return count;
+}
+
+function getLevelLabel(user) {
+  if (!user) return "";
+  if (user.level === "middle") return "التعليم المتوسط";
+  if (user.level === "secondary") {
+    const year      = user.year       || "";
+    const branch    = user.branchType || "";
+    const specialty = user.specialty  || "";
+    const specLabels = {
+      tech:               "تقني رياضي",
+      "تسيير واقتصاد":   "تسيير واقتصاد",
+      "رياضيات":          "رياضيات",
+      lang:               "لغات أجنبية",
+    };
+    const specLabel = specLabels[specialty] ||
+      (branch === "arts_main" || branch === "arts" ? "آداب وفلسفة" : "علوم تجريبية");
+
+    if (year === "1sec") return branch === "arts" ? "السنة الأولى ثانوي — آداب" : "السنة الأولى ثانوي — علوم";
+    if (year === "2sec") return `السنة الثانية ثانوي — ${specLabel}`;
+    return `السنة الثالثة ثانوي — ${specLabel}`;
+  }
+  return "";
+}
+
+function getTodayStr() {
+  return new Date().toISOString().split("T")[0];
+}
+
+// ─── الصفحة الرئيسية ─────────────────────────────────────────────────────────
+export default function DashboardHome() {
+  const router = useRouter();
+  const user   = useAuthStore(s => s.user);
+
+  const [stats, setStats] = useState({
+    points:           0,
+    rank:             null,
+    subscribedCourses:0,
+    tasksCompleted:   0,
+    tasksTotal:       0,
+    loading:          true,
+  });
+
+  // ─── تحميل الإحصائيات ───────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!user?.id) return;
+    loadStats();
+  }, [user?.id]);
+
+  const loadStats = async () => {
+    try {
+      const today = getTodayStr();
+
+      // ✅ 1. عدد المواد = نفس منطق صفحة "موادي الدراسية"
+      const subscribedCourses = getSubjectsCount(user);
+
+      // ✅ 2. المهام المنجزة اليوم
+      let tasksCompleted = 0, tasksTotal = 0;
+      try {
+        const tSnap = await getDocs(
+          query(collection(db, "taskProgress"),
+            where("userId", "==", user.id),
+            where("date",   "==", today)
+          )
+        );
+        tasksTotal     = tSnap.size;
+        tasksCompleted = tSnap.docs.filter(d => d.data().completed).length;
+      } catch {}
+
+      // ✅ 3. الترتيب
+      let rank = null;
+      try {
+        const allUsersSnap = await getDocs(
+          query(collection(db, "users"), where("points", ">", user.points || 0))
+        );
+        rank = allUsersSnap.size + 1;
+      } catch {}
+
+      setStats({
+        points:            user.points || 0,
+        rank,
+        subscribedCourses,
+        tasksCompleted,
+        tasksTotal,
+        loading:           false,
+      });
+    } catch {
+      setStats(s => ({ ...s, loading: false }));
+    }
+  };
+
+  const taskPercent = stats.tasksTotal > 0
+    ? Math.round((stats.tasksCompleted / stats.tasksTotal) * 100)
+    : 0;
+
+  const greeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return "صباح الخير";
+    if (h < 17) return "مساء الخير";
+    return "مساء النور";
+  };
+
+  // ─── بطاقات الإحصائيات ──────────────────────────────────────────────────────
+  const statCards = [
+    {
+      label: "المواد المشترك بها",
+      value: stats.loading ? "..." : stats.subscribedCourses,
+      icon:  BookOpen,
+      color: "blue",
+      sub:   "مادة دراسية",
+    },
+    {
+      label: "رصيد النقاط",
+      value: stats.loading ? "..." : stats.points.toLocaleString("ar"),
+      icon:  Star,
+      color: "yellow",
+      sub:   "نقطة مكتسبة",
+    },
+    {
+      label: "المركز الحالي",
+      value: stats.loading ? "..." : stats.rank ? `#${stats.rank}` : "—",
+      icon:  Trophy,
+      color: "orange",
+      sub:   "في لوحة المتصدرين",
+    },
+    {
+      label: "مهام اليوم",
+      value: stats.loading ? "..." : `${stats.tasksCompleted}/${stats.tasksTotal || 0}`,
+      icon:  Target,
+      color: "emerald",
+      sub:   stats.tasksTotal === 0 ? "لا توجد مهام اليوم" : `${taskPercent}% مكتملة`,
+    },
   ];
 
-  const recentLessons = [
-    { id: 1, title: "الدوال الأسية واللوغاريتمية", subject: "رياضيات", progress: 75 },
-    { id: 2, title: "الوحدة الأولى: تركيب البروتين", subject: "علوم طبيعية", progress: 30 },
-    { id: 3, title: "ثنائية القطب RC", subject: "فيزياء", progress: 90 },
-  ];
+  const colorMap = {
+    blue:    { bg: "bg-blue-50 dark:bg-blue-900/20",    icon: "text-blue-500",    border: "border-blue-100 dark:border-blue-800"    },
+    yellow:  { bg: "bg-yellow-50 dark:bg-yellow-900/20",icon: "text-yellow-500",  border: "border-yellow-100 dark:border-yellow-800"  },
+    orange:  { bg: "bg-orange-50 dark:bg-orange-900/20",icon: "text-orange-500",  border: "border-orange-100 dark:border-orange-800"  },
+    emerald: { bg: "bg-emerald-50 dark:bg-emerald-900/20",icon: "text-emerald-500",border: "border-emerald-100 dark:border-emerald-800"},
+  };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Welcome Banner */}
+    <div className="space-y-6" dir="rtl">
+
+      {/* ─── البانر الترحيبي ─── */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden bg-gradient-to-r from-primary via-primary to-secondary rounded-[2.5rem] p-8 md:p-12 text-white shadow-xl shadow-primary/20"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y:  0  }}
+        className="relative overflow-hidden bg-gradient-to-l from-primary via-blue-600 to-violet-600 rounded-3xl p-6 md:p-8 text-white"
       >
-        <div className="relative z-10">
-          <span className="inline-block px-4 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold mb-4">
-            لوحة التحكم الذكية
-          </span>
-          <h1 className="text-3xl md:text-5xl font-bold mb-4">
-            مرحباً بك مجدداً، {user?.name}! 👋
-          </h1>
-          <p className="text-white/80 text-lg max-w-md leading-relaxed mb-8">
-            جاهز لمواصلة رحلة التفوق؟ لديك دروس جديدة تنتظرك اليوم.
-          </p>
+        {/* خلفية زخرفية */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-4 left-4 w-32 h-32 rounded-full bg-white"/>
+          <div className="absolute bottom-0 right-8 w-48 h-48 rounded-full bg-white"/>
+        </div>
+
+        <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div>
+            <span className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full">
+              لوحة التحكم الذكية
+            </span>
+            <h1 className="text-2xl md:text-3xl font-black mt-3">
+              {greeting()}، {user?.name || "طالب"} 👋
+            </h1>
+            <p className="text-white/80 mt-1 text-sm">
+              {getLevelLabel(user)
+                ? `${getLevelLabel(user)} — جاهز لمواصلة رحلة التفوق؟`
+                : "جاهز لمواصلة رحلة التفوق؟"}
+            </p>
+
+            {/* شريط تقدم المهام */}
+            {stats.tasksTotal > 0 && (
+              <div className="mt-4 max-w-xs">
+                <div className="flex justify-between text-xs text-white/80 mb-1">
+                  <span>مهام اليوم</span>
+                  <span>{stats.tasksCompleted}/{stats.tasksTotal}</span>
+                </div>
+                <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${taskPercent}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="h-full bg-white rounded-full"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* زر ابدأ الدراسة */}
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-white text-primary font-bold px-8 py-4 rounded-2xl flex items-center gap-2 shadow-lg transition-all"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => router.push("/dashboard/courses")}
+            className="flex items-center gap-3 bg-white text-primary font-black px-6 py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all text-sm flex-shrink-0"
           >
-            <Zap size={20} fill="currentColor" />
+            <Zap size={20} className="text-yellow-500"/>
             ابدأ الدراسة
+            <ArrowLeft size={16}/>
           </motion.button>
         </div>
-        <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-[100px]" />
-        <Trophy className="absolute bottom-4 left-12 text-white/10 w-48 h-48 rotate-12 hidden md:block" />
       </motion.div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.1 }}
-            className="bg-white dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-start justify-between">
-              <div
-                className={`p-4 rounded-2xl bg-${stat.color}-50 dark:bg-${stat.color}-900/10 text-${stat.color}-600`}
-              >
-                <stat.icon size={24} />
+      {/* ─── بطاقات الإحصائيات ─── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((card, i) => {
+          const Icon = card.icon;
+          const c    = colorMap[card.color];
+          return (
+            <motion.div
+              key={card.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y:  0 }}
+              transition={{ delay: i * 0.08 }}
+              className={`bg-white dark:bg-gray-900 rounded-2xl border ${c.border} p-5 space-y-3`}
+            >
+              <div className={`w-10 h-10 rounded-xl ${c.bg} flex items-center justify-center`}>
+                <Icon className={c.icon} size={20}/>
               </div>
-            </div>
-            <div className="mt-4 text-right">
-              <h3 className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                {stat.label}
-              </h3>
-              <p className="text-3xl font-black text-gray-800 dark:text-gray-100 mt-1">
-                {stat.value}
-              </p>
-            </div>
-          </motion.div>
-        ))}
+              <div>
+                <p className="text-2xl font-black text-gray-800 dark:text-white">{card.value}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{card.label}</p>
+                <p className="text-xs text-gray-400">{card.sub}</p>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
-      {/* Continue Learning */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
-              واصل التعلم
-            </h2>
-          </div>
-          <div className="grid gap-4">
-            {recentLessons.map((lesson) => (
-              <div
-                key={lesson.id}
-                className="bg-white dark:bg-gray-900 p-5 rounded-3xl border border-gray-100 dark:border-gray-800 flex items-center gap-4 group cursor-pointer hover:border-primary/40 transition-all"
-              >
-                <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
-                  <PlayCircle size={32} />
-                </div>
-                <div className="flex-1 text-right">
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-bold text-gray-800 dark:text-gray-200">
-                      {lesson.title}
-                    </h3>
-                    <span className="text-[10px] bg-secondary/10 text-secondary px-2 py-1 rounded-md font-bold">
-                      {lesson.subject}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${lesson.progress}%` }}
-                        className="h-full bg-primary"
-                      />
-                    </div>
-                    <span className="text-xs font-bold text-gray-500">
-                      {lesson.progress}%
-                    </span>
-                  </div>
-                </div>
+      {/* ─── روابط سريعة ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          {
+            title:  "موادي الدراسية",
+            desc:   "استعرض دروسك وتمارينك",
+            icon:   BookOpen,
+            color:  "blue",
+            href:   "/dashboard/courses",
+          },
+          {
+            title:  "مهمة اليوم",
+            desc:   stats.tasksCompleted === stats.tasksTotal && stats.tasksTotal > 0
+              ? "✅ أنهيت مهام اليوم!"
+              : "أنهِ مهامك واكسب نقاطاً",
+            icon:   Target,
+            color:  "orange",
+            href:   "/dashboard/tasks",
+          },
+          {
+            title:  "لوحة المتصدرين",
+            desc:   stats.rank ? `مركزك الحالي #${stats.rank}` : "تحقق من مركزك",
+            icon:   Trophy,
+            color:  "yellow",
+            href:   "/dashboard/leaderboard",
+          },
+        ].map((item, i) => {
+          const Icon = item.icon;
+          const c    = colorMap[item.color] || colorMap.blue;
+          return (
+            <motion.button
+              key={item.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y:  0 }}
+              transition={{ delay: 0.3 + i * 0.08 }}
+              whileHover={{ y: -3 }}
+              onClick={() => router.push(item.href)}
+              className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 text-right hover:shadow-md transition-all w-full"
+            >
+              <div className={`w-11 h-11 rounded-2xl ${c.bg} flex items-center justify-center mb-3`}>
+                <Icon className={c.icon} size={22}/>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Daily challenges */}
-        <div className="bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 p-8">
-          <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-gray-100">
-            تحديات اليوم
-          </h3>
-          <div className="space-y-4">
-            {[
-              { t: "إنهاء درس الرياضيات", p: "+20" },
-              { t: "حل 5 تمارين فيزياء", p: "+50" },
-              { t: "مراجعة مصطلحات التاريخ", p: "+30" },
-            ].map((task, i) => (
-              <div
-                key={i}
-                className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between"
-              >
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {task.t}
-                </span>
-                <span className="text-xs font-bold text-secondary">{task.p} ن</span>
-              </div>
-            ))}
-          </div>
-        </div>
+              <p className="font-black text-gray-800 dark:text-white text-sm">{item.title}</p>
+              <p className="text-xs text-gray-400 mt-1">{item.desc}</p>
+            </motion.button>
+          );
+        })}
       </div>
+
     </div>
   );
 }

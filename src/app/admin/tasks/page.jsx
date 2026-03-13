@@ -23,16 +23,22 @@ const TASK_TYPES = [
 
 // ─── المستويات الدراسية (تطابق getUserLevel) ─────────────────────────────────
 const LEVELS = [
-  { value: "all",          label: "🌍 جميع المستويات" },
-  { value: "middle",       label: "📚 التعليم المتوسط" },
-  { value: "1sec_science", label: "🔬 السنة الأولى — علوم وتكنولوجيا" },
-  { value: "1sec_arts",    label: "📖 السنة الأولى — آداب" },
-  { value: "science_exp",  label: "🧪 السنة 2/3 — علوم تجريبية" },
-  { value: "science_math", label: "📐 السنة 2/3 — رياضيات" },
-  { value: "science_tech", label: "⚙️ السنة 2/3 — تقني رياضي" },
-  { value: "science_eco",  label: "💼 السنة 2/3 — تسيير واقتصاد" },
-  { value: "arts_philo",   label: "🧠 السنة 2/3 — آداب وفلسفة" },
-  { value: "arts_lang",    label: "🌐 السنة 2/3 — لغات أجنبية" },
+  { value: "all",               label: "🌍 جميع المستويات" },
+  { value: "middle",            label: "📚 التعليم المتوسط" },
+  { value: "1sec_science",      label: "🔬 السنة الأولى — علوم وتكنولوجيا" },
+  { value: "1sec_arts",         label: "📖 السنة الأولى — آداب" },
+  { value: "2sec_science_exp",  label: "🧪 السنة الثانية — علوم تجريبية" },
+  { value: "2sec_science_math", label: "📐 السنة الثانية — رياضيات" },
+  { value: "2sec_science_tech", label: "⚙️ السنة الثانية — تقني رياضي" },
+  { value: "2sec_science_eco",  label: "💼 السنة الثانية — تسيير واقتصاد" },
+  { value: "2sec_arts_philo",   label: "🧠 السنة الثانية — آداب وفلسفة" },
+  { value: "2sec_arts_lang",    label: "🌐 السنة الثانية — لغات أجنبية" },
+  { value: "science_exp",       label: "🧪 السنة الثالثة — علوم تجريبية" },
+  { value: "science_math",      label: "📐 السنة الثالثة — رياضيات" },
+  { value: "science_tech",      label: "⚙️ السنة الثالثة — تقني رياضي" },
+  { value: "science_eco",       label: "💼 السنة الثالثة — تسيير واقتصاد" },
+  { value: "arts_philo",        label: "🧠 السنة الثالثة — آداب وفلسفة" },
+  { value: "arts_lang",         label: "🌐 السنة الثالثة — لغات أجنبية" },
 ];
 
 // ─── مساعدات ──────────────────────────────────────────────────────────────────
@@ -86,7 +92,23 @@ export default function AdminTasksPage() {
     try {
       const q    = query(collection(db, "dailyTasks"), orderBy("date", "asc"));
       const snap = await getDocs(q);
-      setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const allTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // ✅ حذف المهام المنتهية تلقائياً
+      const today = new Date(); today.setHours(0,0,0,0);
+      const expired = allTasks.filter(t => {
+        const d = new Date(t.date); d.setHours(0,0,0,0);
+        return d < today;
+      });
+      if (expired.length > 0) {
+        await Promise.all(expired.map(t => deleteDoc(doc(db, "dailyTasks", t.id))));
+      }
+
+      // عرض فقط المهام الحالية والقادمة
+      setTasks(allTasks.filter(t => {
+        const d = new Date(t.date); d.setHours(0,0,0,0);
+        return d >= today;
+      }));
     } catch { showToast("error", "فشل تحميل المهام"); }
     finally  { setLoading(false); }
   };
@@ -149,7 +171,6 @@ export default function AdminTasksPage() {
 
   const todayTasks    = tasks.filter(t => getTaskStatus(t.date) === "اليوم");
   const upcomingTasks = tasks.filter(t => getTaskStatus(t.date) === "قادمة");
-  const pastTasks     = tasks.filter(t => getTaskStatus(t.date) === "منتهية");
 
   const daysCount = startDate && endDate
     ? Math.max(0, Math.ceil((new Date(endDate) - new Date(startDate)) / 86400000) + 1)
@@ -357,7 +378,12 @@ export default function AdminTasksPage() {
         <div className="space-y-6">
           {todayTasks.length > 0    && <TaskGroup title="مهام اليوم 🔥"    tasks={todayTasks}    colorClass="emerald" onDelete={handleDelete} deleting={deleting}/>}
           {upcomingTasks.length > 0 && <TaskGroup title="المهام القادمة 📅" tasks={upcomingTasks} colorClass="blue"    onDelete={handleDelete} deleting={deleting}/>}
-          {pastTasks.length > 0     && <TaskGroup title="المهام المنتهية"   tasks={pastTasks}     colorClass="gray"    onDelete={handleDelete} deleting={deleting} collapsed/>}
+          {todayTasks.length === 0 && upcomingTasks.length === 0 && (
+            <div className="text-center py-16 text-gray-400">
+              <p className="text-lg font-bold">لا توجد مهام حالية أو قادمة</p>
+              <p className="text-sm mt-1">أضف مهمة جديدة من الزر أعلاه</p>
+            </div>
+          )}
         </div>
       )}
     </div>
