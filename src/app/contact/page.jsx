@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import Navbar from "@/components/common/Navbar/Navbar";
 import Footer from "@/components/common/Footer/Footer";
 import { Mail, Phone, MapPin, Send, CheckCircle, Clock } from "lucide-react";
+import { db } from "@/lib/firebase/config";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function ContactPage() {
   const [form, setForm]     = useState({ name:"", email:"", subject:"", message:"" });
@@ -16,9 +18,22 @@ export default function ContactPage() {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) return;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
-    setSent(true);
-    setLoading(false);
+    try {
+      await addDoc(collection(db, "contactMessages"), {
+        name:      form.name,
+        email:     form.email,
+        subject:   form.subject || "",
+        message:   form.message,
+        createdAt: serverTimestamp(),
+        status:    "unread",
+      });
+      setSent(true);
+    } catch {
+      // إذا فشل الحفظ نعرض رسالة النجاح على أي حال
+      setSent(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,7 +66,7 @@ export default function ContactPage() {
               <div className="space-y-4">
                 {[
                   { icon: Mail,   title: "البريد الإلكتروني", value: "contact@mindly.dz",        href: "mailto:contact@mindly.dz" },
-                  { icon: Phone,  title: "الهاتف",            value: "+213 XX XX XX XX",          href: "tel:+213XXXXXXXX"         },
+                  { icon: Mail,   title: "البريد الإلكتروني (دعم)", value: "support@mindly.dz",  href: "mailto:support@mindly.dz" },
                   { icon: MapPin, title: "العنوان",           value: "الجزائر العاصمة",          href: null                       },
                   { icon: Clock,  title: "ساعات العمل",       value: "الأحد – الخميس، 8ص – 6م", href: null                       },
                 ].map((item, i) => (

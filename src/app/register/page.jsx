@@ -6,11 +6,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, Phone, MapPin, GraduationCap, ArrowRight, Lock, 
   Eye, EyeOff, ShieldCheck, Mail, AlertCircle, Loader2, 
-  CheckCircle, Key, BookOpen, Info, Check, X
+  CheckCircle, Key, BookOpen, Info, Check, X, Home, RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import { auth } from "@/lib/firebase/config";
+import { sendEmailVerification } from "firebase/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -32,8 +34,9 @@ export default function RegisterPage() {
     number: false,
     special: false
   });
+  const [emailSent, setEmailSent] = useState(false);
+  const [resending, setResending] = useState(false);
 
-  // Get Zustand store state and actions
   const { 
     loading, 
     error, 
@@ -43,7 +46,6 @@ export default function RegisterPage() {
     clearSuccess 
   } = useAuthStore();
 
-  // قائمة الولايات الجزائرية
   const algerianWilayas = [
     "أدرار", "الشلف", "الأغواط", "أم البواقي", "باتنة", "بجاية", "بسكرة", "بشار",
     "البليدة", "البويرة", "تمنراست", "تبسة", "تلمسان", "تيارت", "تيزي وزو", "الجزائر",
@@ -54,7 +56,6 @@ export default function RegisterPage() {
     "غرداية", "غليزان"
   ];
 
-  // دالة قياس قوة كلمة المرور
   const checkPasswordStrength = (password) => {
     const checks = {
       length: password.length >= 8,
@@ -75,7 +76,6 @@ export default function RegisterPage() {
     return { checks, score };
   };
 
-  // التحقق من رقم الهاتف
   const validatePhoneNumber = (phone) => {
     const phoneRegex = /^(05|06|07)[0-9]{8}$/;
     return phoneRegex.test(phone);
@@ -84,10 +84,8 @@ export default function RegisterPage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // تحديث البيانات
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // مسح الأخطاء عند الكتابة
     if (formErrors[name]) {
       setFormErrors(prev => ({ ...prev, [name]: "" }));
     }
@@ -95,11 +93,9 @@ export default function RegisterPage() {
       clearError();
     }
     
-    // التحقق من كلمة المرور
     if (name === "password") {
       checkPasswordStrength(value);
       
-      // التحقق من تطابق كلمات المرور
       if (formData.confirmPassword && value !== formData.confirmPassword) {
         setFormErrors(prev => ({ 
           ...prev, 
@@ -110,7 +106,6 @@ export default function RegisterPage() {
       }
     }
     
-    // التحقق من تأكيد كلمة المرور
     if (name === "confirmPassword") {
       if (value !== formData.password) {
         setFormErrors(prev => ({ 
@@ -122,7 +117,6 @@ export default function RegisterPage() {
       }
     }
     
-    // التحقق من البريد الإلكتروني
     if (name === "email" && value) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(value)) {
@@ -133,7 +127,6 @@ export default function RegisterPage() {
       }
     }
     
-    // التحقق من رقم الهاتف
     if (name === "phone" && value) {
       if (!validatePhoneNumber(value)) {
         setFormErrors(prev => ({ 
@@ -143,7 +136,6 @@ export default function RegisterPage() {
       }
     }
 
-    // منطق التصفير عند تغيير الخيارات الكبرى
     if (name === "level") {
       setFormData(prev => ({ 
         ...prev, 
@@ -169,7 +161,6 @@ export default function RegisterPage() {
   const validateForm = () => {
     const errors = {};
     
-    // التحقق من الحقول المطلوبة
     const requiredFields = ['name', 'surname', 'email', 'phone', 'wilaya', 'password', 'confirmPassword', 'level'];
     requiredFields.forEach(field => {
       if (!formData[field].trim()) {
@@ -187,28 +178,23 @@ export default function RegisterPage() {
       }
     });
     
-    // التحقق من البريد الإلكتروني
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (formData.email && !emailRegex.test(formData.email)) {
       errors.email = "البريد الإلكتروني غير صالح";
     }
     
-    // التحقق من رقم الهاتف
     if (formData.phone && !validatePhoneNumber(formData.phone)) {
       errors.phone = "رقم الهاتف غير صالح. يجب أن يبدأ بـ 05، 06، أو 07 ويتكون من 10 أرقام";
     }
     
-    // التحقق من تطابق كلمات المرور
     if (formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword) {
       errors.confirmPassword = "كلمتا المرور غير متطابقتين";
     }
     
-    // التحقق من قوة كلمة المرور
     if (formData.password && passwordStrength < 75) {
       errors.password = "كلمة المرور ضعيفة. يجب أن تحتوي على 8 أحرف على الأقل، حرف كبير، رقم ورمز";
     }
     
-    // التحقق من التخصصات إذا كان ثانوي
     if (formData.level === "secondary") {
       if (!formData.year) errors.year = "السنة الدراسية مطلوبة";
       if (!formData.branchType) errors.branchType = "الشعبة مطلوبة";
@@ -219,6 +205,25 @@ export default function RegisterPage() {
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  // ─── إعادة إرسال بريد التحقق ─────────────────────────────────────────────
+  const handleResendEmail = async () => {
+    setResending(true);
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        await sendEmailVerification(currentUser, {
+          url: window.location.origin + "/login",
+        });
+        useAuthStore.setState({ success: "تم إرسال رابط التحقق مرة أخرى!" });
+        setTimeout(() => clearSuccess(), 4000);
+      }
+    } catch {
+      useAuthStore.setState({ error: "فشل إرسال الإيميل، حاول بعد دقيقة" });
+    } finally {
+      setResending(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -233,26 +238,30 @@ export default function RegisterPage() {
     clearSuccess();
 
     try {
-      console.log("🚀 بدء إنشاء حساب مع Firebase...");
+
       
-      // Use Zustand register action
       const result = await register(formData);
       
       if (!result.success) {
         throw new Error(result.error || "فشل في إنشاء الحساب");
       }
-      
-      console.log("✅ تم إنشاء حساب:", result.userId);
-      
-      // حفظ البيانات مؤقتاً للتوجيه لصفحة الدفع
-      const { password, confirmPassword, ...safeUserData } = formData;
-      // التوجيه لصفحة الدفع بعد ثانيتين
-      setTimeout(() => {
-        router.push('/payment');
-      }, 2000);
+
+      // ✅ إرسال بريد التحقق من الإيميل
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser && !currentUser.emailVerified) {
+          await sendEmailVerification(currentUser, {
+            url: window.location.origin + "/login",
+          });
+        }
+      } catch (verErr) {
+        // لا نوقف العملية إذا فشل إرسال الإيميل
+      }
+
+      setEmailSent(true);
       
     } catch (err) {
-      console.error("❌ خطأ في التسجيل:", err);
+
     }
   };
 
@@ -268,6 +277,17 @@ export default function RegisterPage() {
         transition={{ duration: 0.3 }}
         className="max-w-2xl w-full bg-white dark:bg-gray-900 rounded-[2.5rem] shadow-2xl border border-gray-100 dark:border-gray-800 p-8 md:p-12"
       >
+        {/* زر العودة */}
+        <div className="flex justify-end mb-4">
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 text-gray-400 hover:text-primary text-sm font-medium bg-gray-100 dark:bg-gray-800 hover:bg-primary/10 dark:hover:bg-primary/20 px-3 py-1.5 rounded-xl transition-all"
+          >
+            <Home size={15} />
+            الرئيسية
+          </Link>
+        </div>
+
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-primary to-blue-600 rounded-2xl shadow-lg mb-4">
             <GraduationCap className="text-white w-10 h-10" />
@@ -280,8 +300,59 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        {/* رسالة النجاح */}
-        {success && (
+        {/* ─── شاشة التحقق من الإيميل ─── */}
+        {emailSent && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-6 p-6 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-2xl text-center space-y-4"
+          >
+            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center mx-auto">
+              <Mail size={32} className="text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h3 className="font-black text-lg text-blue-800 dark:text-blue-300">
+                تحقق من بريدك الإلكتروني 📧
+              </h3>
+              <p className="text-sm text-blue-600 dark:text-blue-400 mt-2 leading-relaxed">
+                أرسلنا رابط تفعيل إلى
+                <span className="font-bold block mt-1">{formData.email}</span>
+              </p>
+              <p className="text-xs text-blue-500 dark:text-blue-500 mt-2">
+                افتح بريدك وانقر على الرابط لتفعيل حسابك، ثم ادخل لصفحة الدفع
+              </p>
+            </div>
+
+            {/* زر إعادة الإرسال */}
+            <button
+              type="button"
+              onClick={handleResendEmail}
+              disabled={resending}
+              className="flex items-center justify-center gap-2 mx-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-all disabled:opacity-50"
+            >
+              {resending
+                ? <><Loader2 size={15} className="animate-spin" /> جاري الإرسال...</>
+                : <><RefreshCw size={15} /> إعادة إرسال الرابط</>
+              }
+            </button>
+
+            {/* زر الانتقال للدفع */}
+            <div className="pt-2 border-t border-blue-200 dark:border-blue-800">
+              <p className="text-xs text-blue-500 mb-2">فعّلت إيميلك بالفعل؟</p>
+              <button
+                type="button"
+                onClick={() => router.push('/payment')}
+                className="flex items-center justify-center gap-2 mx-auto px-5 py-2.5 bg-primary text-white font-bold rounded-xl text-sm hover:bg-primary-hover transition-all"
+              >
+                <ArrowRight size={15} className="rotate-180" />
+                المتابعة لصفحة الدفع
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* رسالة النجاح العادية — تظهر فقط إذا لم يُرسل إيميل */}
+        {success && !emailSent && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -327,7 +398,7 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {!emailSent && <form onSubmit={handleSubmit} className="space-y-6">
           {/* الاسم واللقب */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="relative">
@@ -346,10 +417,7 @@ export default function RegisterPage() {
                 disabled={loading || success}
               />
               {formErrors.name && (
-                <p className={errorStyle}>
-                  <AlertCircle size={12} />
-                  {formErrors.name}
-                </p>
+                <p className={errorStyle}><AlertCircle size={12} />{formErrors.name}</p>
               )}
             </div>
             <div className="relative">
@@ -368,10 +436,7 @@ export default function RegisterPage() {
                 disabled={loading || success}
               />
               {formErrors.surname && (
-                <p className={errorStyle}>
-                  <AlertCircle size={12} />
-                  {formErrors.surname}
-                </p>
+                <p className={errorStyle}><AlertCircle size={12} />{formErrors.surname}</p>
               )}
             </div>
           </div>
@@ -394,10 +459,7 @@ export default function RegisterPage() {
                 disabled={loading || success}
               />
               {formErrors.email && (
-                <p className={errorStyle}>
-                  <AlertCircle size={12} />
-                  {formErrors.email}
-                </p>
+                <p className={errorStyle}><AlertCircle size={12} />{formErrors.email}</p>
               )}
             </div>
             <div className="relative">
@@ -416,10 +478,7 @@ export default function RegisterPage() {
                 disabled={loading || success}
               />
               {formErrors.phone && (
-                <p className={errorStyle}>
-                  <AlertCircle size={12} />
-                  {formErrors.phone}
-                </p>
+                <p className={errorStyle}><AlertCircle size={12} />{formErrors.phone}</p>
               )}
               <p className="text-xs text-gray-500 mt-1 mr-1">
                 مثال: 05XX XX XX XX أو 06XX XX XX XX أو 07XX XX XX XX
@@ -443,16 +502,11 @@ export default function RegisterPage() {
             >
               <option value="">اختر ولايتك</option>
               {algerianWilayas.sort().map((wilaya) => (
-                <option key={wilaya} value={wilaya}>
-                  {wilaya}
-                </option>
+                <option key={wilaya} value={wilaya}>{wilaya}</option>
               ))}
             </select>
             {formErrors.wilaya && (
-              <p className={errorStyle}>
-                <AlertCircle size={12} />
-                {formErrors.wilaya}
-              </p>
+              <p className={errorStyle}><AlertCircle size={12} />{formErrors.wilaya}</p>
             )}
           </div>
 
@@ -481,10 +535,7 @@ export default function RegisterPage() {
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
             {formErrors.password && (
-              <p className={errorStyle}>
-                <AlertCircle size={12} />
-                {formErrors.password}
-              </p>
+              <p className={errorStyle}><AlertCircle size={12} />{formErrors.password}</p>
             )}
           </div>
 
@@ -513,10 +564,7 @@ export default function RegisterPage() {
               {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
             {formErrors.confirmPassword && (
-              <p className={errorStyle}>
-                <AlertCircle size={12} />
-                {formErrors.confirmPassword}
-              </p>
+              <p className={errorStyle}><AlertCircle size={12} />{formErrors.confirmPassword}</p>
             )}
           </div>
 
@@ -545,8 +593,6 @@ export default function RegisterPage() {
                 }}
               />
             </div>
-            
-            {/* شروط كلمة المرور */}
             <div className="grid grid-cols-2 gap-2 mt-3">
               <div className={`flex items-center gap-2 ${passwordChecks.length ? 'text-green-600' : 'text-gray-400'}`}>
                 {passwordChecks.length ? <Check size={12} /> : <X size={12} />}
@@ -569,7 +615,7 @@ export default function RegisterPage() {
 
           <hr className="border-gray-100 dark:border-gray-800" />
 
-          {/* المستوى الدراسي الذكي */}
+          {/* المستوى الدراسي */}
           <div className="space-y-6">
             <div className="relative">
               <label className={labelStyle}>
@@ -589,10 +635,7 @@ export default function RegisterPage() {
                 <option value="secondary">الطور الثانوي</option>
               </select>
               {formErrors.level && (
-                <p className={errorStyle}>
-                  <AlertCircle size={12} />
-                  {formErrors.level}
-                </p>
+                <p className={errorStyle}><AlertCircle size={12} />{formErrors.level}</p>
               )}
             </div>
 
@@ -622,10 +665,7 @@ export default function RegisterPage() {
                       <option value="3sec">السنة الثالثة ثانوي</option>
                     </select>
                     {formErrors.year && (
-                      <p className={errorStyle}>
-                        <AlertCircle size={12} />
-                        {formErrors.year}
-                      </p>
+                      <p className={errorStyle}><AlertCircle size={12} />{formErrors.year}</p>
                     )}
                   </div>
 
@@ -661,14 +701,10 @@ export default function RegisterPage() {
                           )}
                         </select>
                         {formErrors.branchType && (
-                          <p className={errorStyle}>
-                            <AlertCircle size={12} />
-                            {formErrors.branchType}
-                          </p>
+                          <p className={errorStyle}><AlertCircle size={12} />{formErrors.branchType}</p>
                         )}
                       </div>
 
-                      {/* تخصصات علمية */}
                       {formData.branchType === "science_main" && (
                         <div>
                           <label className={labelStyle}>
@@ -689,15 +725,11 @@ export default function RegisterPage() {
                             <option value="تسيير واقتصاد">تسيير واقتصاد</option>
                           </select>
                           {formErrors.specialty && (
-                            <p className={errorStyle}>
-                              <AlertCircle size={12} />
-                              {formErrors.specialty}
-                            </p>
+                            <p className={errorStyle}><AlertCircle size={12} />{formErrors.specialty}</p>
                           )}
                         </div>
                       )}
 
-                      {/* تفصيل التقني رياضي */}
                       {formData.specialty === "tech" && (
                         <div>
                           <label className={labelStyle}>
@@ -718,15 +750,11 @@ export default function RegisterPage() {
                             <option value="هندسة الطرائق">هندسة الطرائق</option>
                           </select>
                           {formErrors.subSpecialty && (
-                            <p className={errorStyle}>
-                              <AlertCircle size={12} />
-                              {formErrors.subSpecialty}
-                            </p>
+                            <p className={errorStyle}><AlertCircle size={12} />{formErrors.subSpecialty}</p>
                           )}
                         </div>
                       )}
 
-                      {/* تخصصات أدبية ولغات */}
                       {formData.branchType === "arts_main" && (
                         <div>
                           <label className={labelStyle}>
@@ -745,10 +773,7 @@ export default function RegisterPage() {
                             <option value="lang">لغات أجنبية</option>
                           </select>
                           {formErrors.specialty && (
-                            <p className={errorStyle}>
-                              <AlertCircle size={12} />
-                              {formErrors.specialty}
-                            </p>
+                            <p className={errorStyle}><AlertCircle size={12} />{formErrors.specialty}</p>
                           )}
                         </div>
                       )}
@@ -773,10 +798,7 @@ export default function RegisterPage() {
                             <option value="فرنسية">فرنسية</option>
                           </select>
                           {formErrors.thirdLanguage && (
-                            <p className={errorStyle}>
-                              <AlertCircle size={12} />
-                              {formErrors.thirdLanguage}
-                            </p>
+                            <p className={errorStyle}><AlertCircle size={12} />{formErrors.thirdLanguage}</p>
                           )}
                         </div>
                       )}
@@ -853,7 +875,7 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          {/* سياسة الخصوصية والشروط */}
+          {/* سياسة الخصوصية */}
           <div className="text-center">
             <p className="text-xs text-gray-500 dark:text-gray-400">
               بمجرد التسجيل، فإنك توافق على{" "}
@@ -862,7 +884,7 @@ export default function RegisterPage() {
               <Link href="/privacy" className="text-primary hover:underline">سياسة الخصوصية</Link>
             </p>
           </div>
-        </form>
+        </form>}
       </motion.div>
     </div>
   );

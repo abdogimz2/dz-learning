@@ -10,14 +10,13 @@ export default function Navbar() {
 
   const navItems = [
     { label: "الرئيسية", href: "/" },
-    { label: "المواد", href: "/subjects" },
-    
     { label: "من نحن", href: "/about" },
+    { label: "المواد", href: "/#subjects" },
     { label: "اتصل بنا", href: "/contact" },
   ];
 
   return (
-    <nav className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-50 border-b border-gray-200 dark:border-gray-800">
+    <nav dir="rtl" className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-50 border-b border-gray-200 dark:border-gray-800">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-18">
           {/* Logo */}

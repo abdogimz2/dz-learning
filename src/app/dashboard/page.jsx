@@ -9,8 +9,9 @@ import {
   Zap, CheckCircle, Clock, TrendingUp, Flame,
 } from "lucide-react";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { useAuthStore } from "@/store/authStore";
+import { useSubscriptionGuard } from "@/hooks/useSubscriptionGuard";
 
 // ─── نفس دالة getUserLevel من courses-page-v2 حرفياً ────────────────────────
 function getUserLevel(user) {
@@ -106,10 +107,19 @@ export default function DashboardHome() {
     try {
       const today = getTodayStr();
 
-      // ✅ 1. عدد المواد = نفس منطق صفحة "موادي الدراسية"
+      // ✅ 1. عدد المواد
       const subscribedCourses = getSubjectsCount(user);
 
-      // ✅ 2. المهام المنجزة اليوم
+      // ✅ 2. جلب النقاط الحقيقية من Firestore مباشرة
+      let realPoints = user.points || 0;
+      try {
+        const userSnap = await getDoc(doc(db, "users", user.id));
+        if (userSnap.exists()) {
+          realPoints = userSnap.data().points || 0;
+        }
+      } catch {}
+
+      // ✅ 3. المهام المنجزة اليوم
       let tasksCompleted = 0, tasksTotal = 0;
       try {
         const tSnap = await getDocs(
@@ -122,22 +132,33 @@ export default function DashboardHome() {
         tasksCompleted = tSnap.docs.filter(d => d.data().completed).length;
       } catch {}
 
-      // ✅ 3. الترتيب
+      // ✅ 4. الترتيب — نفس طريقة لوحة المتصدرين بالضبط
+      // نجلب كل المستخدمين النشطين مرتبين بالنقاط ونجد موقعنا
       let rank = null;
       try {
-        const allUsersSnap = await getDocs(
-          query(collection(db, "users"), where("points", ">", user.points || 0))
+        const { orderBy: orderByFn, limit: limitFn } = await import("firebase/firestore");
+        const leaderSnap = await getDocs(
+          query(
+            collection(db, "users"),
+            orderByFn("points", "desc"),
+            limitFn(200)
+          )
         );
-        rank = allUsersSnap.size + 1;
+        const activeUsers = leaderSnap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(u => u.role !== "admin" && u.status === "active");
+
+        const myIndex = activeUsers.findIndex(u => u.id === user.id);
+        rank = myIndex >= 0 ? myIndex + 1 : null;
       } catch {}
 
       setStats({
-        points:            user.points || 0,
+        points:           realPoints,
         rank,
         subscribedCourses,
         tasksCompleted,
         tasksTotal,
-        loading:           false,
+        loading:          false,
       });
     } catch {
       setStats(s => ({ ...s, loading: false }));

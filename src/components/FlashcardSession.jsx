@@ -1,53 +1,54 @@
 // src/components/FlashcardSession.jsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  HelpCircle, Eye, RotateCcw, X, Trophy, Star,
+  HelpCircle, Eye, RotateCcw, X, Trophy, BookmarkCheck,
 } from "lucide-react";
-import { useAuthStore }       from "@/store/authStore";
-import { useRepetitionStore } from "@/store/useRepetitionStore";
+import { useAuthStore }              from "@/store/authStore";
+import { useRepetitionStore }        from "@/store/useRepetitionStore";
+import { useFlashcardProgressStore } from "@/store/useFlashcardProgressStore";
 
-const RATING_POINTS = {
-  easy:  10,
-  good:   7,
-  hard:   3,
-  again:  0,
-};
+export default function FlashcardSession({ cards, onClose, sessionKey = "default" }) {
+  const user             = useAuthStore((state) => state.user);
+  const { scheduleCard } = useRepetitionStore();
+  const { saveProgress, getProgress, clearProgress } = useFlashcardProgressStore();
 
-export default function FlashcardSession({ cards, onClose, startIndex = 0 }) {
-  const [currentIndex, setCurrentIndex] = useState(startIndex);
+  const total = cards.length;
+
+  // ─── استعادة التقدم من Zustand persist ───────────────────────────────────
+  const savedIndex   = user?.id ? getProgress(user.id, sessionKey) : 0;
+  const initialIndex = savedIndex >= total ? 0 : savedIndex;
+
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [flipped,      setFlipped]      = useState(false);
   const [results,      setResults]      = useState([]);
   const [finished,     setFinished]     = useState(false);
-  const [totalEarned,  setTotalEarned]  = useState(0);
+  const [showResume,   setShowResume]   = useState(initialIndex > 0);
 
-  const user             = useAuthStore((state) => state.user);
-  const { scheduleCard } = useRepetitionStore();
+  // أخفِ رسالة الاستئناف بعد 3 ثوانٍ
+  useEffect(() => {
+    if (!showResume) return;
+    const t = setTimeout(() => setShowResume(false), 3000);
+    return () => clearTimeout(t);
+  }, [showResume]);
+
+  // ─── حفظ التقدم كلما انتقل المستخدم لبطاقة جديدة ────────────────────────
+  useEffect(() => {
+    if (!user?.id || finished) return;
+    saveProgress(user.id, sessionKey, currentIndex);
+  }, [currentIndex, user?.id, sessionKey, finished]);
 
   const current  = cards[currentIndex];
-  const total    = cards.length;
   const progress = (currentIndex / total) * 100;
 
-  const handleRating = async (rating) => {
-    const pts = RATING_POINTS[rating] || 0;
-
-    // ✅ إبلاغ نظام المهام اليومية
+  const handleRating = (rating) => {
     if (window.__reportTaskAction) {
       window.__reportTaskAction("qa");
     }
 
-    // ✅ نقاط الـ flashcard
-    if (pts > 0 && user?.id) {
-      try {
-        setTotalEarned((prev) => prev + pts);
-      } catch (err) {
-        console.error("خطأ في النقاط:", err);
-      }
-    }
-
-    // ✅ جدولة السؤال الصعب للمراجعة بعد 3 أيام
+    // جدولة الأسئلة الصعبة للمراجعة
     if (rating === "hard" && user?.id && current) {
       scheduleCard({
         id:               current.id,
@@ -62,9 +63,10 @@ export default function FlashcardSession({ cards, onClose, startIndex = 0 }) {
       });
     }
 
-    setResults((prev) => [...prev, { cardId: current.id, rating, pts }]);
+    setResults((prev) => [...prev, { cardId: current.id, rating }]);
 
     if (currentIndex + 1 >= total) {
+      if (user?.id) clearProgress(user.id, sessionKey);
       setFinished(true);
     } else {
       setFlipped(false);
@@ -73,11 +75,12 @@ export default function FlashcardSession({ cards, onClose, startIndex = 0 }) {
   };
 
   const restart = () => {
+    if (user?.id) clearProgress(user.id, sessionKey);
     setCurrentIndex(0);
     setFlipped(false);
     setResults([]);
     setFinished(false);
-    setTotalEarned(0);
+    setShowResume(false);
   };
 
   // ─── شاشة النتائج ─────────────────────────────────────────────────────────
@@ -102,24 +105,14 @@ export default function FlashcardSession({ cards, onClose, startIndex = 0 }) {
           <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-2">
             انتهت الجلسة! 🎉
           </h2>
-          <p className="text-gray-500 mb-4">لقد أجبت على {total} سؤال</p>
-
-          {/* النقاط المكتسبة */}
-          {totalEarned > 0 && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-4 mb-6 flex items-center justify-center gap-2">
-              <Star className="text-yellow-500" size={22} fill="currentColor" />
-              <p className="font-black text-yellow-700 dark:text-yellow-400 text-xl">
-                +{totalEarned} نقطة مكتسبة!
-              </p>
-            </div>
-          )}
+          <p className="text-gray-500 mb-6">لقد أجبت على {total} سؤال</p>
 
           <div className="grid grid-cols-2 gap-3 mb-8">
             {[
-              { label: "سهل",       count: easy,  color: "emerald", pts: easy  * 10 },
-              { label: "جيد",       count: good,  color: "blue",    pts: good  * 7  },
-              { label: "صعب",       count: hard,  color: "orange",  pts: hard  * 3  },
-              { label: "مرة أخرى", count: again, color: "red",     pts: 0          },
+              { label: "سهل",       count: easy,  color: "emerald" },
+              { label: "جيد",       count: good,  color: "blue"    },
+              { label: "صعب",       count: hard,  color: "orange"  },
+              { label: "مرة أخرى", count: again, color: "red"     },
             ].map((r) => (
               <div
                 key={r.label}
@@ -131,9 +124,6 @@ export default function FlashcardSession({ cards, onClose, startIndex = 0 }) {
                 <p className={`text-sm font-bold text-${r.color}-600 dark:text-${r.color}-400`}>
                   {r.label}
                 </p>
-                {r.pts > 0 && (
-                  <p className={`text-xs text-${r.color}-400 mt-1`}>+{r.pts} نقطة</p>
-                )}
               </div>
             ))}
           </div>
@@ -167,6 +157,21 @@ export default function FlashcardSession({ cards, onClose, startIndex = 0 }) {
     >
       <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
 
+        {/* ─── رسالة الاستئناف ─────────────────────────────────────────────── */}
+        <AnimatePresence>
+          {showResume && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex items-center gap-2 px-5 py-2.5 bg-primary/10 border-b border-primary/20 text-primary text-sm font-bold"
+            >
+              <BookmarkCheck size={16} />
+              استأنفت من حيث توقفت — البطاقة {currentIndex + 1} من {total}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Header */}
         <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -174,12 +179,6 @@ export default function FlashcardSession({ cards, onClose, startIndex = 0 }) {
             <span className="font-black text-gray-800 dark:text-white">سؤال وجواب</span>
           </div>
           <div className="flex items-center gap-3">
-            {totalEarned > 0 && (
-              <span className="flex items-center gap-1 text-sm font-black text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded-full">
-                <Star size={13} fill="currentColor" className="text-yellow-500" />
-                +{totalEarned}
-              </span>
-            )}
             <span className="text-sm font-bold text-gray-500">
               {currentIndex + 1} / {total}
             </span>
@@ -258,10 +257,10 @@ export default function FlashcardSession({ cards, onClose, startIndex = 0 }) {
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "مرة أخرى", rating: "again", color: "red",     pts: 0  },
-                  { label: "صعب",       rating: "hard",  color: "orange",  pts: 3  },
-                  { label: "جيد",       rating: "good",  color: "blue",    pts: 7  },
-                  { label: "سهل",       rating: "easy",  color: "emerald", pts: 10 },
+                  { label: "مرة أخرى", rating: "again", color: "red"     },
+                  { label: "صعب",       rating: "hard",  color: "orange"  },
+                  { label: "جيد",       rating: "good",  color: "blue"    },
+                  { label: "سهل",       rating: "easy",  color: "emerald" },
                 ].map((btn) => (
                   <button
                     key={btn.rating}
@@ -271,9 +270,6 @@ export default function FlashcardSession({ cards, onClose, startIndex = 0 }) {
                       hover:bg-${btn.color}-50 dark:hover:bg-${btn.color}-900/20`}
                   >
                     {btn.label}
-                    {btn.pts > 0 && (
-                      <span className="block text-[10px] opacity-70 mt-0.5">+{btn.pts} نقطة</span>
-                    )}
                   </button>
                 ))}
               </div>

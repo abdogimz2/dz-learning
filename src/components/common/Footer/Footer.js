@@ -5,7 +5,6 @@ import {
   Instagram,
   Youtube,
   Mail,
-  Phone,
   MapPin,
   School,
 } from "lucide-react";
@@ -85,11 +84,10 @@ export default function Footer() {
             <ul className="space-y-3">
               {[
                 { label: "الرئيسية", href: "/", icon: "🏠" },
-                { label: "جميع المواد", href: "/subjects", icon: "📚" },
-                { label: "الاختبارات", href: "/exams", icon: "📝" },
-                
-                { label: "المدونة", href: "/blog", icon: "✍️" },
+                { label: "تسجيل الدخول", href: "/login", icon: "🔑" },
+                { label: "إنشاء حساب", href: "/register", icon: "📝" },
                 { label: "من نحن", href: "/about", icon: "ℹ️" },
+                { label: "اتصل بنا", href: "/contact", icon: "✉️" },
               ].map((item) => (
                 <li key={item.href}>
                   <Link
@@ -125,7 +123,7 @@ export default function Footer() {
                   ].map((level) => (
                     <Link
                       key={level}
-                      href={`/level/${level}`}
+                      href="/register"
                       className="text-xs bg-gray-800 hover:bg-primary hover:text-white px-3 py-1.5 rounded-full transition-colors"
                     >
                       {level}
@@ -147,7 +145,7 @@ export default function Footer() {
                   ].map((spec) => (
                     <Link
                       key={spec.label}
-                      href={`/specialty/${spec.label}`}
+                      href="/register"
                       className={`text-xs bg-gray-800 hover:text-white px-3 py-1.5 rounded-full transition-colors ${spec.color}`}
                     >
                       {spec.label}
@@ -165,16 +163,13 @@ export default function Footer() {
             </h4>
             <div className="space-y-4 text-gray-400">
               <div className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg">
-                <Phone
-                  size={18}
-                  className="text-secondary mt-1 flex-shrink-0"
-                />
+                <Mail size={18} className="text-secondary mt-1 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-white">الدعم الفني</p>
-                  <p className="text-sm">0550-123-456</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    من السبت إلى الخميس، 8 صباحاً - 5 مساءً
-                  </p>
+                  <a href="mailto:contact@mindly.dz" className="text-sm hover:text-secondary transition-colors">
+                    contact@mindly.dz
+                  </a>
+                  <p className="text-xs text-gray-500 mt-1">نرد خلال 24 ساعة</p>
                 </div>
               </div>
 
@@ -183,10 +178,10 @@ export default function Footer() {
                 <div>
                   <p className="font-medium text-white">البريد الإلكتروني</p>
                   <a
-                    href="mailto:contact@dz-learning.dz"
+                    href="mailto:contact@mindly.dz"
                     className="text-sm hover:text-secondary transition-colors"
                   >
-                    contact@dz-learning.dz
+                    contact@mindly.dz
                   </a>
                   <p className="text-xs text-gray-500 mt-1">نرد خلال 24 ساعة</p>
                 </div>
@@ -235,13 +230,13 @@ export default function Footer() {
                 شروط الاستخدام
               </Link>
               <Link
-                href="/sitemap"
+                href="/about"
                 className="text-gray-400 hover:text-primary transition-colors"
               >
                 خريطة الموقع
               </Link>
               <Link
-                href="/accessibility"
+                href="/contact"
                 className="text-gray-400 hover:text-secondary transition-colors"
               >
                 إمكانية الوصول
@@ -249,33 +244,17 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Certification Badges */}
-          <div className="flex justify-center items-center gap-6 mt-8 pt-6 border-t border-gray-800">
-            <div className="text-center">
-              <div className="bg-gray-800 rounded-lg px-4 py-2 inline-block">
-                <span className="text-primary font-bold">ISO 27001</span>
-                <p className="text-xs text-gray-500 mt-1">أمن المعلومات</p>
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="bg-gray-800 rounded-lg px-4 py-2 inline-block">
-                <span className="text-secondary font-bold">معتمد</span>
-                <p className="text-xs text-gray-500 mt-1">وزارة التعليم</p>
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="bg-gray-800 rounded-lg px-4 py-2 inline-block">
-                <span className="text-primary font-bold">SSL</span>
-                <p dir="rtl" className="text-xs text-gray-500 mt-1">
-                  آمن 100%
-                </p>
-              </div>
+          {/* Security Badge */}
+          <div className="flex justify-center mt-8 pt-6 border-t border-gray-800">
+            <div className="bg-gray-800 rounded-lg px-4 py-2 inline-block text-center">
+              <span className="text-primary font-bold">SSL</span>
+              <p className="text-xs text-gray-500 mt-1">اتصال آمن 100%</p>
             </div>
           </div>
+
         </div>
       </div>
 
-      {/* Back to top button for mobile */}
       <div className="md:hidden bg-gray-800 py-3 text-center">
         <Link
           href="#top"

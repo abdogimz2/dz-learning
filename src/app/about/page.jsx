@@ -1,10 +1,13 @@
 // src/app/about/page.jsx
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/common/Navbar/Navbar";
 import Footer from "@/components/common/Footer/Footer";
 import { Brain, Target, Users, Award, BookOpen, Zap } from "lucide-react";
+import { db } from "@/lib/firebase/config";
+import { collection, getCountFromServer } from "firebase/firestore";
 
 const TEAM = [
   { name: "فريق المحتوى",  role: "مختصون تربويون معتمدون",   emoji: "👨‍🏫" },
@@ -22,6 +25,21 @@ const VALUES = [
 ];
 
 export default function AboutPage() {
+  const [studentsCount, setStudentsCount] = useState("33+");
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const snap = await getCountFromServer(collection(db, "users"));
+        const count = snap.data().count || 0;
+        setStudentsCount(count > 0 ? `${count}+` : "33+");
+      } catch {
+        // نبقي الرقم الافتراضي
+      }
+    };
+    fetchCount();
+  }, []);
+
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950" dir="rtl">
       <Navbar />
@@ -60,7 +78,7 @@ export default function AboutPage() {
             </motion.div>
             <motion.div initial={{opacity:0,x:40}} whileInView={{opacity:1,x:0}} viewport={{once:true}} transition={{duration:0.8}}
               className="grid grid-cols-2 gap-4">
-              {[{num:"500+",label:"درس تعليمي"},{num:"1000+",label:"سؤال اختباري"},{num:"33+",label:"طالب مسجّل"},{num:"24/7",label:"دعم متواصل"}].map((s,i)=>(
+              {[{num:"500+",label:"درس تعليمي"},{num:"1000+",label:"سؤال اختباري"},{num:studentsCount,label:"طالب مسجّل"},{num:"24/7",label:"دعم متواصل"}].map((s,i)=>(
                 <motion.div key={i} initial={{opacity:0,scale:0.9}} whileInView={{opacity:1,scale:1}} viewport={{once:true}} transition={{delay:i*0.1}}
                   className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 text-center border border-gray-200 dark:border-gray-700">
                   <p className="text-3xl font-black text-primary">{s.num}</p>

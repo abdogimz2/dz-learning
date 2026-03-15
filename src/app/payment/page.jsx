@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Upload, Shield, AlertCircle, CheckCircle, ArrowLeft,
-  FileText, X, Receipt, Info, Loader2,
+  FileText, X, Receipt, Info, Loader2, LogOut,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
+import { auth } from "@/lib/firebase/config";
 import { db } from "@/lib/firebase/config";
 import { collection, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore";
 
@@ -22,10 +23,14 @@ export default function PaymentPage() {
   const [uploading, setUploading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [checkingVerification, setCheckingVerification] = useState(true);
+  const [resending, setResending] = useState(false);
 
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const logout = useAuthStore((state) => state.logout);
 
   // ─── حماية الصفحة ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -33,16 +38,78 @@ export default function PaymentPage() {
       router.replace("/register");
       return;
     }
-    // إذا حسابه مفعل مسبقاً
     if (user.status === "active") {
       router.replace("/dashboard");
       return;
     }
-    // إذا أرسل الوصل مسبقاً
     if (user.paymentStatus === "submitted") {
       router.replace("/waiting-verification");
     }
   }, [isAuthenticated, user, router]);
+
+  // ─── التحقق من تفعيل الإيميل ─────────────────────────────────────────────
+  useEffect(() => {
+    const checkEmail = async () => {
+      setCheckingVerification(true);
+      try {
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          // reload لجلب أحدث حالة من Firebase
+          await currentUser.reload();
+          setEmailVerified(currentUser.emailVerified);
+        }
+      } catch {
+        setEmailVerified(false);
+      } finally {
+        setCheckingVerification(false);
+      }
+    };
+    if (isAuthenticated) checkEmail();
+  }, [isAuthenticated]);
+
+  // ─── إعادة إرسال بريد التحقق ─────────────────────────────────────────────
+  const handleLogout = async () => {
+    await logout();
+    router.replace("/login");
+  };
+
+  const handleResendVerification = async () => {
+    setResending(true);
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const { sendEmailVerification } = await import("firebase/auth");
+        await sendEmailVerification(currentUser, {
+          url: window.location.origin + "/payment",
+        });
+        setError("");
+        alert("تم إرسال رابط التحقق! تحقق من بريدك ثم اضغط 'لقد فعّلت إيميلي'");
+      }
+    } catch {
+      setError("فشل إرسال الإيميل، حاول بعد دقيقة");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  // ─── التحقق اليدوي بعد ضغط الزر ────────────────────────────────────────
+  const handleCheckVerification = async () => {
+    setCheckingVerification(true);
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        await currentUser.reload();
+        const verified = currentUser.emailVerified;
+        setEmailVerified(verified);
+        if (!verified) setError("لم يتم تفعيل الإيميل بعد، تحقق من بريدك وانقر الرابط");
+        else setError("");
+      }
+    } catch {
+      setError("حدث خطأ، حاول مرة أخرى");
+    } finally {
+      setCheckingVerification(false);
+    }
+  };
 
   // ─── حساب المبلغ ─────────────────────────────────────────────────────────
   const amount = user?.level === "middle" ? "4000" : "5000";
@@ -154,6 +221,82 @@ export default function PaymentPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // ─── شاشة التحميل ──────────────────────────────────────────────────────
+  if (checkingVerification) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // ─── شاشة حجب الدفع — الإيميل غير مفعّل ──────────────────────────────────
+  if (!emailVerified) {
+    return (
+      <div dir="rtl" className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-950 dark:to-gray-900 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 p-8 text-center space-y-6"
+        >
+          <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto">
+            <Receipt size={36} className="text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-2">
+              أكمل تفعيل إيميلك أولاً
+            </h2>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              أرسلنا رابط تفعيل إلى بريدك الإلكتروني. افتح الإيميل وانقر على الرابط قبل المتابعة للدفع.
+            </p>
+            {user?.email && (
+              <p className="font-bold text-primary mt-2 text-sm">{user.email}</p>
+            )}
+          </div>
+          {error && (
+            <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl text-sm">
+              <AlertCircle size={16} className="flex-shrink-0" />
+              {error}
+            </div>
+          )}
+          <div className="space-y-3">
+            <button
+              onClick={handleCheckVerification}
+              disabled={checkingVerification}
+              className="w-full py-3.5 bg-primary text-white font-black rounded-2xl hover:bg-primary-hover transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {checkingVerification
+                ? <><Loader2 size={18} className="animate-spin" /> جاري التحقق...</>
+                : <><CheckCircle size={18} /> لقد فعّلت إيميلي</>
+              }
+            </button>
+            <button
+              onClick={handleResendVerification}
+              disabled={resending}
+              className="w-full py-3 border-2 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 font-bold rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+            >
+              {resending
+                ? <><Loader2 size={15} className="animate-spin" /> جاري الإرسال...</>
+                : "لم يصلني الإيميل — أعد الإرسال"
+              }
+            </button>
+
+            {/* زر تسجيل الخروج */}
+            <button
+              onClick={handleLogout}
+              className="w-full py-3 border-2 border-red-200 dark:border-red-900 text-red-500 dark:text-red-400 font-bold rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center justify-center gap-2 text-sm"
+            >
+              <LogOut size={15} /> تسجيل الخروج
+            </button>
+          </div>
+          <p className="text-xs text-gray-400">
+            تحقق من مجلد Spam إذا لم يصلك الإيميل
+          </p>
+        </motion.div>
       </div>
     );
   }

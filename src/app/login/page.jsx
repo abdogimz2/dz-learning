@@ -8,29 +8,30 @@ import { motion } from "framer-motion";
 import {
   Mail, Lock, LogIn, Eye, EyeOff, AlertCircle,
   School, Shield, ArrowRight, Loader2,
-  CheckCircle, RefreshCw,
+  CheckCircle, RefreshCw, Home,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { auth } from "@/lib/firebase/config";
+import { db } from "@/lib/firebase/config";
+import { doc, getDoc, deleteDoc } from "firebase/firestore";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [formErrors, setFormErrors] = useState({});
-  const [hydrated, setHydrated] = useState(false); // ✅ حالة التحميل من localStorage
+  const [hydrated, setHydrated] = useState(false);
 
   const router = useRouter();
   const { isAuthenticated, user, loading, error, success, login, clearError, clearSuccess, logout } =
     useAuthStore();
 
-  // ✅ ننتظر Zustand يحمّل البيانات من localStorage أولاً
   useEffect(() => {
     setHydrated(true);
   }, []);
 
-  // ✅ التوجيه فقط بعد التحميل الكامل
   useEffect(() => {
-    if (!hydrated) return; // انتظر التحميل
-    if (!isAuthenticated || !user) return; // مش مسجل — ابقى هنا
+    if (!hydrated) return;
+    if (!isAuthenticated || !user) return;
 
     if (user.role === "admin" || user.role === "sub_admin") {
       router.replace("/admin");
@@ -53,7 +54,6 @@ export default function LoginPage() {
     }
   }, [hydrated, isAuthenticated, user]);
 
-  // تحميل الإيميل المحفوظ
   useEffect(() => {
     const saved = localStorage.getItem("remembered_email");
     if (saved) setFormData((p) => ({ ...p, email: saved }));
@@ -86,8 +86,49 @@ export default function LoginPage() {
     const result = await login(formData.email, formData.password);
     if (!result.success) return;
 
-    // حفظ الإيميل
     localStorage.setItem("remembered_email", formData.email);
+
+    // ✅ تحقق من pendingDelete — حساب منتهي الاشتراك
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const userSnap = await getDoc(doc(db, "users", currentUser.uid));
+        if (userSnap.exists() && userSnap.data().pendingDelete) {
+          // احذف الآن لأن الجلسة جديدة
+          try {
+            await deleteDoc(doc(db, "users", currentUser.uid));
+            const { deleteUser } = await import("firebase/auth");
+            await deleteUser(currentUser);
+          } catch { /* تجاهل */ }
+          await logout();
+          router.replace("/subscription-expired");
+          return;
+        }
+      }
+    } catch { /* تجاهل */ }
+
+    // ✅ تحقق من تفعيل الإيميل
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser && !currentUser.emailVerified) {
+        // الإيميل غير مفعّل — أرسل رابط تفعيل وأظهر رسالة
+        const { sendEmailVerification } = await import("firebase/auth");
+        await sendEmailVerification(currentUser, {
+          url: window.location.origin + "/payment",
+        }).catch(() => {}); // تجاهل خطأ الإرسال
+        useAuthStore.setState({
+          error: "⚠️ بريدك الإلكتروني غير مفعّل. تم إرسال رابط التفعيل — تحقق من بريدك أولاً.",
+          loading: false,
+        });
+        // تسجيل خروج مؤقت حتى يفعّل
+        const { signOut } = await import("firebase/auth");
+        await signOut(auth);
+        useAuthStore.setState({ isAuthenticated: false, user: null });
+        return;
+      }
+    } catch {
+      // نكمل التوجيه الطبيعي إذا فشل التحقق
+    }
     // التوجيه يتم في useEffect تلقائياً
   };
 
@@ -117,7 +158,6 @@ export default function LoginPage() {
     clearSuccess();
   };
 
-  // ── شاشة التحميل الأولي (قبل Hydration) ──────────────────────────────────
   if (!hydrated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
@@ -126,7 +166,6 @@ export default function LoginPage() {
     );
   }
 
-  // ── شاشة التوجيه (بعد تسجيل دخول ناجح) ──────────────────────────────────
   if (hydrated && isAuthenticated && user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
@@ -140,7 +179,6 @@ export default function LoginPage() {
     );
   }
 
-  // ── صفحة تسجيل الدخول ────────────────────────────────────────────────────
   return (
     <div
       dir="rtl"
@@ -155,7 +193,17 @@ export default function LoginPage() {
         {/* Header */}
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-primary to-blue-600" />
-          <div className="relative p-8 md:p-10 text-white text-center">
+          {/* زر العودة */}
+          <div className="relative flex justify-end pt-4 px-4">
+            <Link
+              href="/"
+              className="flex items-center gap-1.5 text-white/80 hover:text-white text-sm font-medium bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-xl transition-all"
+            >
+              <Home size={15} />
+              الرئيسية
+            </Link>
+          </div>
+          <div className="relative px-8 pb-8 text-white text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full backdrop-blur-sm mb-5">
               <School size={40} className="text-white" />
             </div>

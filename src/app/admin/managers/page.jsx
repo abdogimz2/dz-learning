@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShieldCheck, ShieldOff, Plus, Trash2, Loader2,
+  ShieldCheck, ShieldOff, Plus, Loader2,
   CheckCircle, AlertCircle, X, Eye, EyeOff, UserCog,
   Mail, Lock, Crown,
 } from "lucide-react";
@@ -16,7 +16,6 @@ import {
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useAuthStore } from "@/store/authStore";
 
-// الصلاحيات المتاحة للأدمن الفرعي
 const SUB_ADMIN_PERMISSIONS = [
   "إضافة وتعديل المحتوى",
   "إدارة متجر النقاط",
@@ -25,10 +24,17 @@ const SUB_ADMIN_PERMISSIONS = [
   "عرض الإحصائيات",
 ];
 
+const MAIN_ADMIN_PERMISSIONS = [
+  "جميع صلاحيات الأدمن الفرعي",
+  "إدارة المستخدمين وإيقافهم",
+  "قبول ورفض طلبات التفعيل",
+  "إضافة وإزالة الأدمنية الفرعيين",
+  "الوصول لجميع إعدادات المنصة",
+];
+
 export default function AdminManagersPage() {
   const currentUser = useAuthStore(s => s.user);
 
-  // حماية — الأدمن الفرعي لا يمكنه الوصول لهذه الصفحة
   if (currentUser?.role === "sub_admin") {
     return (
       <div className="h-[60vh] flex flex-col items-center justify-center gap-4 text-center" dir="rtl">
@@ -44,7 +50,7 @@ export default function AdminManagersPage() {
   const [showForm,  setShowForm]  = useState(false);
   const [saving,    setSaving]    = useState(false);
   const [removing,  setRemoving]  = useState(null);
-  const [confirmRM, setConfirmRM] = useState(null); // { id, isMain }
+  const [confirmRM, setConfirmRM] = useState(null);
   const [toast,     setToast]     = useState(null);
 
   // فورم
@@ -52,10 +58,16 @@ export default function AdminManagersPage() {
   const [password,  setPassword]  = useState("");
   const [showPass,  setShowPass]  = useState(false);
   const [name,      setName]      = useState("");
+  const [adminType, setAdminType] = useState("sub_admin"); // "admin" | "sub_admin"
 
   const showToast = (type, msg) => {
     setToast({ type, msg });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  const resetForm = () => {
+    setEmail(""); setPassword(""); setName("");
+    setAdminType("sub_admin"); setShowPass(false);
   };
 
   // ─── جلب الأدمنية ─────────────────────────────────────────────────────────
@@ -71,7 +83,7 @@ export default function AdminManagersPage() {
 
   useEffect(() => { fetchAdmins(); }, []);
 
-  // ─── إضافة أدمن فرعي ──────────────────────────────────────────────────────
+  // ─── إضافة أدمن (رئيسي أو فرعي) ─────────────────────────────────────────
   const handleAdd = async () => {
     if (!email.trim() || !password.trim() || !name.trim()) {
       showToast("error", "أدخل الاسم والإيميل وكلمة المرور"); return;
@@ -81,24 +93,25 @@ export default function AdminManagersPage() {
     }
     setSaving(true);
     try {
-      // ✅ إنشاء حساب Firebase Auth
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
       const uid  = cred.user.uid;
 
-      // ✅ إنشاء مستند في Firestore بـ role: "sub_admin"
       await setDoc(doc(db, "users", uid), {
         name:        name.trim(),
         surname:     "",
         email:       email.trim(),
-        role:        "sub_admin",
+        role:        adminType,        // "admin" أو "sub_admin"
         status:      "active",
+        isActive:    true,
         points:      0,
         createdAt:   serverTimestamp(),
         updatedAt:   serverTimestamp(),
       });
 
-      showToast("success", "تم إضافة الأدمن الفرعي ✅");
-      setEmail(""); setPassword(""); setName(""); setShowForm(false);
+      const label = adminType === "admin" ? "الأدمن الرئيسي" : "الأدمن الفرعي";
+      showToast("success", `تم إضافة ${label} ✅`);
+      resetForm();
+      setShowForm(false);
       fetchAdmins();
     } catch (e) {
       const msg =
@@ -111,7 +124,7 @@ export default function AdminManagersPage() {
     finally { setSaving(false); }
   };
 
-  // ─── إزالة صلاحية الأدمن الفرعي أو حذف أدمن رئيسي ──────────────────────
+  // ─── إزالة صلاحيات ────────────────────────────────────────────────────────
   const handleRemove = async (adminId, isMainAdmin) => {
     setRemoving(adminId);
     try {
@@ -119,13 +132,16 @@ export default function AdminManagersPage() {
         role: "student", updatedAt: serverTimestamp(),
       });
       setAdmins(prev => prev.filter(a => a.id !== adminId));
-      showToast("success", isMainAdmin ? "تم تخفيض الصلاحيات ✅" : "تم إزالة الصلاحيات ✅");
+      showToast("success", "تم إزالة الصلاحيات ✅");
     } catch { showToast("error", "فشل إزالة الصلاحيات"); }
     finally { setRemoving(null); setConfirmRM(null); }
   };
 
-  const mainAdmin = admins.filter(a => a.role === "admin");
-  const subAdmins = admins.filter(a => a.role === "sub_admin");
+  const mainAdmins = admins.filter(a => a.role === "admin");
+  const subAdmins  = admins.filter(a => a.role === "sub_admin");
+
+  const permissionsToShow = adminType === "admin" ? MAIN_ADMIN_PERMISSIONS : SUB_ADMIN_PERMISSIONS;
+  const permColor = adminType === "admin" ? "yellow" : "blue";
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -177,18 +193,62 @@ export default function AdminManagersPage() {
       <AnimatePresence>
         {showForm && (
           <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
-            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+            onClick={() => { setShowForm(false); resetForm(); }}>
             <motion.div initial={{scale:0.95,y:20}} animate={{scale:1,y:0}}
+              onClick={e => e.stopPropagation()}
               className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-md space-y-5" dir="rtl">
 
+              {/* Header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-black text-xl text-gray-800 dark:text-white">إضافة أدمن فرعي</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">لن يتمكن من إدارة الأدمنية</p>
+                  <h3 className="font-black text-xl text-gray-800 dark:text-white">إضافة أدمن جديد</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">اختر نوع الأدمن أولاً</p>
                 </div>
-                <button onClick={() => setShowForm(false)}
+                <button onClick={() => { setShowForm(false); resetForm(); }}
                   className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800">
                   <X size={20}/>
+                </button>
+              </div>
+
+              {/* ── اختيار النوع ── */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* أدمن رئيسي */}
+                <button
+                  onClick={() => setAdminType("admin")}
+                  className={`relative p-4 rounded-2xl border-2 text-right transition-all ${
+                    adminType === "admin"
+                      ? "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20"
+                      : "border-gray-200 dark:border-gray-700 hover:border-yellow-300"
+                  }`}
+                >
+                  {adminType === "admin" && (
+                    <span className="absolute top-2 left-2 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center">
+                      <CheckCircle size={12} className="text-white"/>
+                    </span>
+                  )}
+                  <Crown size={22} className="text-yellow-500 mb-2"/>
+                  <p className="font-black text-sm text-gray-800 dark:text-white">رئيسي</p>
+                  <p className="text-xs text-gray-400 mt-0.5">كل الصلاحيات</p>
+                </button>
+
+                {/* أدمن فرعي */}
+                <button
+                  onClick={() => setAdminType("sub_admin")}
+                  className={`relative p-4 rounded-2xl border-2 text-right transition-all ${
+                    adminType === "sub_admin"
+                      ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-gray-200 dark:border-gray-700 hover:border-blue-300"
+                  }`}
+                >
+                  {adminType === "sub_admin" && (
+                    <span className="absolute top-2 left-2 w-5 h-5 bg-blue-400 rounded-full flex items-center justify-center">
+                      <CheckCircle size={12} className="text-white"/>
+                    </span>
+                  )}
+                  <ShieldCheck size={22} className="text-blue-500 mb-2"/>
+                  <p className="font-black text-sm text-gray-800 dark:text-white">فرعي</p>
+                  <p className="text-xs text-gray-400 mt-0.5">صلاحيات محدودة</p>
                 </button>
               </div>
 
@@ -230,30 +290,60 @@ export default function AdminManagersPage() {
                 </div>
               </div>
 
-              {/* الصلاحيات */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4">
-                <p className="text-xs font-black text-blue-700 dark:text-blue-300 mb-2">✅ صلاحيات الأدمن الفرعي:</p>
+              {/* الصلاحيات — تتغير حسب النوع */}
+              <div className={`rounded-2xl p-4 ${
+                adminType === "admin"
+                  ? "bg-yellow-50 dark:bg-yellow-900/20"
+                  : "bg-blue-50 dark:bg-blue-900/20"
+              }`}>
+                <p className={`text-xs font-black mb-2 ${
+                  adminType === "admin"
+                    ? "text-yellow-700 dark:text-yellow-300"
+                    : "text-blue-700 dark:text-blue-300"
+                }`}>
+                  {adminType === "admin" ? "👑 صلاحيات الأدمن الرئيسي:" : "✅ صلاحيات الأدمن الفرعي:"}
+                </p>
                 <ul className="space-y-1">
-                  {SUB_ADMIN_PERMISSIONS.map(p => (
-                    <li key={p} className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400">
+                  {permissionsToShow.map(p => (
+                    <li key={p} className={`flex items-center gap-2 text-xs ${
+                      adminType === "admin"
+                        ? "text-yellow-600 dark:text-yellow-400"
+                        : "text-blue-600 dark:text-blue-400"
+                    }`}>
                       <CheckCircle size={12}/> {p}
                     </li>
                   ))}
                 </ul>
-                <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
-                  <p className="text-xs font-black text-red-500">❌ لا يمكنه: إضافة أو حذف أدمن</p>
-                </div>
+                {adminType === "sub_admin" && (
+                  <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
+                    <p className="text-xs font-black text-red-500">❌ لا يمكنه: إضافة أو حذف أدمن</p>
+                  </div>
+                )}
               </div>
 
+              {/* تحذير للأدمن الرئيسي */}
+              {adminType === "admin" && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 flex items-start gap-2">
+                  <span className="text-red-500 text-sm mt-0.5">⚠️</span>
+                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                    الأدمن الرئيسي يمتلك كامل الصلاحيات بما فيها إدارة الأدمنية الآخرين. تأكد من هوية الشخص قبل الإضافة.
+                  </p>
+                </div>
+              )}
+
               <div className="flex gap-3">
-                <button onClick={() => setShowForm(false)}
+                <button onClick={() => { setShowForm(false); resetForm(); }}
                   className="flex-1 py-3 rounded-2xl border-2 border-gray-200 dark:border-gray-700 font-bold text-gray-600 dark:text-gray-300">
                   إلغاء
                 </button>
                 <button onClick={handleAdd} disabled={saving}
-                  className="flex-1 py-3 rounded-2xl bg-primary text-white font-bold disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                  className={`flex-1 py-3 rounded-2xl text-white font-bold disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg transition-all ${
+                    adminType === "admin"
+                      ? "bg-yellow-500 hover:bg-yellow-600 shadow-yellow-200"
+                      : "bg-primary hover:bg-primary-hover shadow-primary/20"
+                  }`}>
                   {saving ? <Loader2 size={16} className="animate-spin"/> : <Plus size={16}/>}
-                  {saving ? "جاري الإنشاء..." : "إضافة"}
+                  {saving ? "جاري الإنشاء..." : adminType === "admin" ? "إضافة أدمن رئيسي" : "إضافة أدمن فرعي"}
                 </button>
               </div>
             </motion.div>
@@ -265,7 +355,7 @@ export default function AdminManagersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black text-gray-900 dark:text-white">إدارة الأدمنية</h1>
-          <p className="text-gray-500 mt-1">إضافة وإدارة أدمنية فرعيين</p>
+          <p className="text-gray-500 mt-1">إضافة وإدارة الأدمنية الرئيسيين والفرعيين</p>
         </div>
         <button onClick={() => setShowForm(true)}
           className="flex items-center gap-2 px-5 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:opacity-90 transition-all">
@@ -280,13 +370,17 @@ export default function AdminManagersPage() {
       ) : (
         <div className="space-y-6">
 
-          {/* الأدمن الرئيسي */}
+          {/* الأدمنية الرئيسيون */}
           <div>
-            <h2 className="font-black text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-              <Crown size={18} className="text-yellow-500"/> الأدمن الرئيسي
-            </h2>
+            <div className="flex items-center gap-2 mb-3">
+              <Crown size={18} className="text-yellow-500"/>
+              <h2 className="font-black text-gray-700 dark:text-gray-300">الأدمنية الرئيسيون</h2>
+              <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 text-xs font-black px-2 py-0.5 rounded-lg">
+                {mainAdmins.length}
+              </span>
+            </div>
             <div className="space-y-2">
-              {mainAdmin.map(a => (
+              {mainAdmins.map(a => (
                 <div key={a.id}
                   className="bg-white dark:bg-gray-900 rounded-2xl border border-yellow-200 dark:border-yellow-800/40 p-4 flex items-center gap-4">
                   <div className="w-11 h-11 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-xl flex items-center justify-center text-white font-black text-lg flex-shrink-0">
@@ -296,11 +390,11 @@ export default function AdminManagersPage() {
                     <p className="font-black text-gray-800 dark:text-white">{a.name} {a.surname}</p>
                     <p className="text-xs text-gray-400">{a.email}</p>
                   </div>
-                  <span className="flex items-center gap-1.5 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 text-xs font-black px-3 py-1.5 rounded-xl">
+                  <span className="flex items-center gap-1.5 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 text-xs font-black px-3 py-1.5 rounded-xl flex-shrink-0">
                     <Crown size={12}/> رئيسي
                   </span>
                   {a.id === currentUser?.id ? (
-                    <span className="text-xs text-primary font-bold bg-primary/10 px-2 py-1 rounded-lg">أنت</span>
+                    <span className="text-xs text-primary font-bold bg-primary/10 px-2 py-1 rounded-lg flex-shrink-0">أنت</span>
                   ) : (
                     <button onClick={() => setConfirmRM({ id: a.id, isMain: true })}
                       className="p-2 rounded-xl bg-red-50 dark:bg-red-900/10 text-red-500 hover:bg-red-100 transition-all flex-shrink-0">
@@ -312,15 +406,15 @@ export default function AdminManagersPage() {
             </div>
           </div>
 
-          {/* الأدمنية الفرعيين */}
+          {/* الأدمنية الفرعيون */}
           <div>
-            <h2 className="font-black text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-3">
               <ShieldCheck size={18} className="text-blue-500"/>
-              الأدمنية الفرعيون
+              <h2 className="font-black text-gray-700 dark:text-gray-300">الأدمنية الفرعيون</h2>
               <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 text-xs font-black px-2 py-0.5 rounded-lg">
                 {subAdmins.length}
               </span>
-            </h2>
+            </div>
 
             {subAdmins.length === 0 ? (
               <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800">

@@ -5,12 +5,13 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Users, BookOpen, CreditCard, CheckCircle,
-  Clock, XCircle, TrendingUp, Loader2,
-  GraduationCap, FileText,
+  Clock, TrendingUp, Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/lib/firebase/config";
-import { collection, getDocs, query, orderBy, limit, where } from "firebase/firestore";
+import {
+  collection, getDocs, query, orderBy, limit, where,
+} from "firebase/firestore";
 
 export default function AdminDashboardPage() {
   const [stats,       setStats]       = useState(null);
@@ -21,47 +22,49 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        // ─── المستخدمون ───────────────────────────────────────────────────────
-        const usersSnap    = await getDocs(collection(db, "users"));
-        const allUsers     = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        // ─── المستخدمون (بدون الموقوفين) ─────────────────────────────────────
+        const usersSnap = await getDocs(
+          query(collection(db, "users"), where("status", "!=", "suspended"))
+        );
+        const allUsers = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-        const totalStudents  = allUsers.filter((u) => u.role !== "admin").length;
+        const totalStudents  = allUsers.filter((u) => !["admin", "sub_admin"].includes(u.role)).length;
         const activeStudents = allUsers.filter((u) => u.status === "active").length;
         const pendingUsers   = allUsers.filter((u) =>
           ["pending", "waiting_verification"].includes(u.status)
         ).length;
 
-        // ─── المدفوعات ───────────────────────────────────────────────────────
-        const paySnap       = await getDocs(collection(db, "payments"));
-        const allPayments   = paySnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        const pendingPay    = allPayments.filter((p) => p.status === "pending").length;
-        const approvedPay   = allPayments.filter((p) => p.status === "approved").length;
+        // ─── المدفوعات ────────────────────────────────────────────────────────
+        const paySnap     = await getDocs(collection(db, "payments"));
+        const allPayments = paySnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const pendingPay  = allPayments.filter((p) => p.status === "pending").length;
+        const approvedPay = allPayments.filter((p) => p.status === "approved").length;
 
-        // ─── المحتوى ─────────────────────────────────────────────────────────
-        const contentSnap   = await getDocs(collection(db, "content"));
-        const totalContent  = contentSnap.size;
+        // ─── المحتوى ──────────────────────────────────────────────────────────
+        const contentSnap  = await getDocs(collection(db, "content"));
+        const totalContent = contentSnap.size;
 
         setStats({
           totalStudents, activeStudents, pendingUsers,
           pendingPay, approvedPay, totalContent,
         });
 
-        // ─── آخر المستخدمين ───────────────────────────────────────────────────
-        const recentUsersQ = query(
-          collection(db, "users"),
-          orderBy("createdAt", "desc"),
-          limit(5)
+        // ─── آخر المستخدمين (بدون الموقوفين) ────────────────────────────────
+        const recentUsersSnap = await getDocs(
+          query(
+            collection(db, "users"),
+            where("status", "!=", "suspended"),
+            orderBy("status"),
+            orderBy("createdAt", "desc"),
+            limit(5)
+          )
         );
-        const recentUsersSnap = await getDocs(recentUsersQ);
         setRecentUsers(recentUsersSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
 
-        // ─── آخر طلبات الدفع ──────────────────────────────────────────────────
-        const recentPayQ = query(
-          collection(db, "payments"),
-          orderBy("createdAt", "desc"),
-          limit(5)
+        // ─── آخر طلبات الدفع ─────────────────────────────────────────────────
+        const recentPaySnap = await getDocs(
+          query(collection(db, "payments"), orderBy("createdAt", "desc"), limit(5))
         );
-        const recentPaySnap = await getDocs(recentPayQ);
         setRecentPay(recentPaySnap.docs.map((d) => ({ id: d.id, ...d.data() })));
 
       } catch (err) {
@@ -82,19 +85,19 @@ export default function AdminDashboardPage() {
   }
 
   const statCards = [
-    { label: "إجمالي الطلاب",     value: stats.totalStudents,  icon: Users,       color: "blue",    href: "/admin/users" },
-    { label: "حسابات مفعّلة",      value: stats.activeStudents, icon: CheckCircle, color: "emerald", href: "/admin/users" },
-    { label: "بانتظار التفعيل",    value: stats.pendingUsers,   icon: Clock,       color: "orange",  href: "/admin/users" },
-    { label: "طلبات دفع معلقة",    value: stats.pendingPay,     icon: CreditCard,  color: "yellow",  href: "/admin/payments" },
-    { label: "مدفوعات مقبولة",     value: stats.approvedPay,    icon: TrendingUp,  color: "green",   href: "/admin/payments" },
-    { label: "عناصر المحتوى",      value: stats.totalContent,   icon: BookOpen,    color: "purple",  href: "/admin/courses" },
+    { label: "إجمالي الطلاب",   value: stats.totalStudents,  icon: Users,       color: "blue",   href: "/admin/users" },
+    { label: "حسابات مفعّلة",    value: stats.activeStudents, icon: CheckCircle, color: "emerald",href: "/admin/users" },
+    { label: "بانتظار التفعيل",  value: stats.pendingUsers,   icon: Clock,       color: "orange", href: "/admin/users" },
+    { label: "طلبات دفع معلقة",  value: stats.pendingPay,     icon: CreditCard,  color: "yellow", href: "/admin/payments" },
+    { label: "مدفوعات مقبولة",   value: stats.approvedPay,    icon: TrendingUp,  color: "green",  href: "/admin/payments" },
+    { label: "عناصر المحتوى",    value: stats.totalContent,   icon: BookOpen,    color: "purple", href: "/admin/courses" },
   ];
 
   const STATUS_CONFIG = {
-    active:               { label: "مفعّل",        bg: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" },
-    pending:              { label: "انتظار",        bg: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400" },
-    waiting_verification: { label: "بانتظار التحقق",bg: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400" },
-    suspended:            { label: "موقوف",         bg: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" },
+    active:               { label: "مفعّل",         bg: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" },
+    pending:              { label: "انتظار",         bg: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400" },
+    waiting_verification: { label: "بانتظار التحقق", bg: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400" },
+    suspended:            { label: "موقوف",          bg: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400" },
   };
 
   const PAY_STATUS = {
@@ -206,9 +209,9 @@ export default function AdminDashboardPage() {
       {/* روابط سريعة */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { href: "/admin/payments", icon: CreditCard, label: "مراجعة طلبات الدفع", desc: `${stats.pendingPay} طلب معلق`, color: "orange" },
-          { href: "/admin/courses",  icon: BookOpen,   label: "إضافة محتوى جديد",   desc: "دروس، تمارين، اختبارات", color: "blue" },
-          { href: "/admin/users",    icon: Users,      label: "إدارة المستخدمين",    desc: `${stats.totalStudents} طالب مسجل`, color: "purple" },
+          { href: "/admin/payments", icon: CreditCard, label: "مراجعة طلبات الدفع", desc: `${stats.pendingPay} طلب معلق`,       color: "orange" },
+          { href: "/admin/courses",  icon: BookOpen,   label: "إضافة محتوى جديد",   desc: "دروس، تمارين، اختبارات",             color: "blue"   },
+          { href: "/admin/users",    icon: Users,      label: "إدارة المستخدمين",    desc: `${stats.totalStudents} طالب مسجل`,   color: "purple" },
         ].map((item, i) => (
           <Link key={i} href={item.href}>
             <div className={`p-5 rounded-2xl border-2 border-${item.color}-200 dark:border-${item.color}-900 bg-${item.color}-50 dark:bg-${item.color}-900/20 hover:shadow-md transition-all cursor-pointer group`}>

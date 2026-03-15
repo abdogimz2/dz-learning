@@ -20,6 +20,28 @@ const STATUS_CONFIG = {
   rejected: { label: "مرفوض", color: "red",     icon: XCircle },
 };
 
+// ─── حساب تاريخ انتهاء الموسم الدراسي ───────────────────────────────────────
+// الموسم: سبتمبر 1 → جوان 30
+// مثال: إذا فعّلنا في أكتوبر 2024 → ينتهي 30 جوان 2025
+// إذا فعّلنا في مارس 2025 → ينتهي 30 جوان 2025
+// إذا فعّلنا في جويلية 2025 (بعد انتهاء الموسم) → ينتهي 30 جوان 2026
+function getSubscriptionEnd() {
+  const now = new Date();
+  const month = now.getMonth(); // 0=يناير ... 8=سبتمبر
+  const year  = now.getFullYear();
+
+  // إذا كنا في جويلية (6) أو أوت (7) — الموسم القادم
+  if (month >= 6 && month <= 7) {
+    return new Date(year + 1, 5, 30, 23, 59, 59); // 30 جوان السنة القادمة
+  }
+  // إذا كنا من سبتمبر (8) → ديسمبر (11) — ينتهي جوان نفس السنة +1
+  if (month >= 8) {
+    return new Date(year + 1, 5, 30, 23, 59, 59);
+  }
+  // إذا كنا من يناير (0) → جوان (5) — ينتهي جوان نفس السنة
+  return new Date(year, 5, 30, 23, 59, 59);
+}
+
 // ─── Modal سبب الرفض ─────────────────────────────────────────────────────────
 function RejectModal({ payment, onConfirm, onClose, loading }) {
   const [reason, setReason] = useState("");
@@ -190,36 +212,96 @@ function PaymentCard({ payment, onApprove, onReject, updating }) {
         </div>
       </div>
 
-      {/* Modal صورة الوصل */}
+      {/* Modal الوصل — يدعم صورة وPDF */}
       <AnimatePresence>
-        {showReceipt && (
-          <div
-            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowReceipt(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative max-w-2xl w-full bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-2xl"
+        {showReceipt && (() => {
+          const url    = payment.receiptUrl || "";
+          const isPdf  = url.toLowerCase().includes(".pdf") ||
+                         url.toLowerCase().includes("application/pdf") ||
+                         url.toLowerCase().includes("%2Fpdf") ||
+                         url.toLowerCase().includes("raw=1");
+          return (
+            <div
+              className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+              onClick={() => setShowReceipt(false)}
             >
-              <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
-                <p className="font-bold text-gray-800 dark:text-white">وصل دفع — {payment.userName}</p>
-                <button onClick={() => setShowReceipt(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl">
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="p-4">
-                <img
-                  src={payment.receiptUrl}
-                  alt="وصل الدفع"
-                  className="w-full max-h-[70vh] object-contain rounded-xl"
-                />
-              </div>
-            </motion.div>
-          </div>
-        )}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative max-w-3xl w-full bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-2xl"
+              >
+                {/* رأس الـ Modal */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-3">
+                    <p className="font-bold text-gray-800 dark:text-white">
+                      وصل دفع — {payment.userName}
+                    </p>
+                    {isPdf && (
+                      <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold px-2 py-0.5 rounded-lg border border-red-200 dark:border-red-800">
+                        PDF
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* زر فتح في تبويب جديد — مفيد دائماً */}
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-xl text-xs font-bold hover:bg-primary/20 transition-all"
+                    >
+                      فتح خارجياً ↗
+                    </a>
+                    <button
+                      onClick={() => setShowReceipt(false)}
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* المحتوى */}
+                <div className="p-4">
+                  {isPdf ? (
+                    /* ─── عرض PDF ─── */
+                    <div className="w-full rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+                      <iframe
+                        src={url}
+                        title="وصل الدفع PDF"
+                        className="w-full"
+                        style={{ height: "70vh", border: "none" }}
+                      />
+                      {/* رسالة احتياطية إذا لم يعمل الـ iframe */}
+                      <div className="p-3 text-center border-t border-gray-200 dark:border-gray-700">
+                        <p className="text-xs text-gray-400 mb-2">
+                          إذا لم يظهر الملف انقر الزر أدناه
+                        </p>
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-hover transition-all"
+                        >
+                          تحميل / فتح الـ PDF ↗
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ─── عرض صورة ─── */
+                    <img
+                      src={url}
+                      alt="وصل الدفع"
+                      className="w-full max-h-[70vh] object-contain rounded-xl"
+                    />
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
     </motion.div>
   );
@@ -261,13 +343,17 @@ export default function AdminPaymentsPage() {
         reviewedAt: serverTimestamp(),
       });
 
-      // تفعيل حساب المستخدم
+      // تفعيل حساب المستخدم + تحديد تاريخ انتهاء الاشتراك
       if (payment?.userId) {
+        const subscriptionEnd = getSubscriptionEnd();
         await updateDoc(doc(db, "users", payment.userId), {
-          status:        "active",
-          isActive:      true,
-          paymentStatus: "paid",
-          updatedAt:     serverTimestamp(),
+          status:              "active",
+          isActive:            true,
+          paymentStatus:       "paid",
+          subscriptionEnd:     subscriptionEnd.toISOString(),
+          subscriptionEndDate: subscriptionEnd.toLocaleDateString("ar-DZ"),
+          activatedAt:         serverTimestamp(),
+          updatedAt:           serverTimestamp(),
         });
       }
 

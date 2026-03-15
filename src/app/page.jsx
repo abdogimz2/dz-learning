@@ -80,7 +80,7 @@ export default function Home() {
               </AnimatedButton>
             </Link>
 
-            <Link href="/subjects">
+            <Link href="/register">
               <AnimatedButton type="secondary">
                 <span className="text-xl">📚</span>
                 تصفح المواد
@@ -96,7 +96,7 @@ export default function Home() {
           >
             <StatItem number="500+" label="درس تعليمي" delay={1.2} />
             <StatItem number="1000+" label="سؤال اختباري" delay={1.4} />
-            <StatItem number="24//7" label="دعم متواصل" delay={1.6} />
+            <StatItem number="24/7" label="دعم متواصل" delay={1.6} />
           </motion.div>
         </div>
       </motion.section>
@@ -162,7 +162,7 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/middle" className="mt-auto">
+                <Link href="/register" className="mt-auto">
                   <button className="mt-10 w-full bg-primary hover:bg-primary-hover text-white font-bold py-4 px-8 rounded-xl transition-colors duration-300">
                     تصفح المواد
                   </button>
@@ -200,7 +200,7 @@ export default function Home() {
                   ))}
                 </div>
 
-                <Link href="/highschool" className="mt-auto">
+                <Link href="/register" className="mt-auto">
                   <button className="mt-10 w-full bg-secondary hover:bg-secondary-hover text-white font-bold py-4 px-8 rounded-xl transition-colors duration-300">
                     تصفح التخصصات
                   </button>
@@ -228,9 +228,11 @@ export default function Home() {
               </button>
             </Link>
 
-            <button className="border-2 border-white text-white hover:bg-white/10 font-bold text-lg py-5 px-12 rounded-xl transition-all duration-300">
-              تعرف على العروض
-            </button>
+            <Link href="/register">
+              <button className="border-2 border-white text-white hover:bg-white/10 font-bold text-lg py-5 px-12 rounded-xl transition-all duration-300">
+                تعرف على العروض
+              </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -273,15 +275,25 @@ function StatItem({ number, label, delay }) {
   useEffect(() => {
     if (!inView) return;
 
-    const timer = setTimeout(() => {
-      if (number.includes("+") || number.includes("/")) {
-        setCount(parseInt(number) || 0);
-      } else {
-        setCount(Number(number));
-      }
-    }, delay * 1000);
+    const target = parseInt(number) || 0;
+    if (target === 0) { setCount(0); return; }
 
-    return () => clearTimeout(timer);
+    let start = 0;
+    const duration = 1200;
+    const step = 16;
+    const increment = target / (duration / step);
+
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= target) {
+        setCount(target);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, step);
+
+    return () => clearInterval(timer);
   }, [inView, number, delay]);
 
   return (
