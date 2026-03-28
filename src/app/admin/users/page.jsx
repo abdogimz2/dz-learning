@@ -56,7 +56,6 @@ function SuspendConfirmModal({ user, onConfirm, onClose, loading }) {
         className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm border border-gray-100 dark:border-gray-800"
         dir="rtl"
       >
-        {/* Header */}
         <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
@@ -64,17 +63,11 @@ function SuspendConfirmModal({ user, onConfirm, onClose, loading }) {
             </div>
             <h3 className="font-black text-gray-900 dark:text-white text-lg">تأكيد الإيقاف</h3>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
-          >
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
             <X size={18} />
           </button>
         </div>
-
-        {/* Body */}
         <div className="p-6 space-y-4">
-          {/* معلومات المستخدم */}
           <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl">
             <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-black text-lg flex-shrink-0">
               {user.name?.[0] || "؟"}
@@ -84,7 +77,6 @@ function SuspendConfirmModal({ user, onConfirm, onClose, loading }) {
               <p className="text-sm text-gray-500">{user.email}</p>
             </div>
           </div>
-
           <div className="space-y-2">
             <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">سيتم تنفيذ الآتي فوراً:</p>
             <ul className="space-y-1.5">
@@ -100,29 +92,17 @@ function SuspendConfirmModal({ user, onConfirm, onClose, loading }) {
               ))}
             </ul>
           </div>
-
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-sm text-amber-700 dark:text-amber-400">
             ⚠️ يمكنك إعادة تفعيل الحساب لاحقاً من خلال فلتر "موقوفة"
           </div>
         </div>
-
-        {/* Actions */}
         <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 transition-all"
-          >
+          <button onClick={onClose} className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 transition-all">
             إلغاء
           </button>
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {loading
-              ? <Loader2 size={16} className="animate-spin" />
-              : <XCircle size={16} />
-            }
+          <button onClick={onConfirm} disabled={loading}
+            className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
             إيقاف وطرد
           </button>
         </div>
@@ -154,7 +134,6 @@ function UserCard({ user, onSuspend, onActivate, updating }) {
       className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden"
     >
       <div className="p-5 flex items-center justify-between gap-4 flex-wrap">
-        {/* معلومات المستخدم */}
         <div className="flex items-center gap-4 min-w-0">
           <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-black text-lg flex-shrink-0">
             {user.name?.[0] || "؟"}
@@ -179,49 +158,27 @@ function UserCard({ user, onSuspend, onActivate, updating }) {
             </div>
           </div>
         </div>
-
-        {/* أزرار */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
-          >
+          <button onClick={() => setExpanded(!expanded)}
+            className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
             <ChevronDown size={18} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
           </button>
-
-          {/* تفعيل */}
           {user.status !== "active" && (
-            <button
-              disabled={updating === user.id}
-              onClick={() => onActivate(user.id)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-all disabled:opacity-50 text-sm shadow-sm"
-            >
-              {updating === user.id
-                ? <Loader2 size={15} className="animate-spin" />
-                : <CheckCircle size={15} />
-              }
+            <button disabled={updating === user.id} onClick={() => onActivate(user.id)}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-all disabled:opacity-50 text-sm shadow-sm">
+              {updating === user.id ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle size={15} />}
               تفعيل
             </button>
           )}
-
-          {/* إيقاف */}
           {user.status === "active" && (
-            <button
-              disabled={updating === user.id}
-              onClick={() => onSuspend(user)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-bold hover:bg-red-100 transition-all disabled:opacity-50 text-sm border border-red-200 dark:border-red-800"
-            >
-              {updating === user.id
-                ? <Loader2 size={15} className="animate-spin" />
-                : <XCircle size={15} />
-              }
+            <button disabled={updating === user.id} onClick={() => onSuspend(user)}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-bold hover:bg-red-100 transition-all disabled:opacity-50 text-sm border border-red-200 dark:border-red-800">
+              {updating === user.id ? <Loader2 size={15} className="animate-spin" /> : <XCircle size={15} />}
               إيقاف
             </button>
           )}
         </div>
       </div>
-
-      {/* تفاصيل */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -264,7 +221,7 @@ export default function AdminUsersPage() {
   const [suspending,   setSuspending]   = useState(false);
   const [deletingAll,  setDeletingAll]  = useState(false);
 
-  // جلب المستخدمين — يستثني الموقوفين افتراضياً إلا إذا اختار الأدمين فلتر "موقوفة"
+  // جلب المستخدمين — الأصلي
   const fetchUsers = async (inclueSuspended = false) => {
     setLoading(true);
     try {
@@ -310,7 +267,6 @@ export default function AdminUsersPage() {
     if (!suspendTarget) return;
     setSuspending(true);
     try {
-      // 1. حظر الحساب + forcedLogout يطرده من أي جهاز
       await updateDoc(doc(db, "users", suspendTarget.id), {
         status:       "suspended",
         isActive:     false,
@@ -318,16 +274,11 @@ export default function AdminUsersPage() {
         suspendedAt:  serverTimestamp(),
         updatedAt:    serverTimestamp(),
       });
-
-      // 2. حذف جميع طلبات الدفع الخاصة بهذا المستخدم من Firestore
       const paymentsSnap = await getDocs(
         query(collection(db, "payments"), where("userId", "==", suspendTarget.id))
       );
       await Promise.all(paymentsSnap.docs.map((d) => deleteDoc(d.ref)));
-
-      // 3. إخفاؤه من القائمة المحلية فوراً
       setUsers((prev) => prev.filter((u) => u.id !== suspendTarget.id));
-
       setSuspendTarget(null);
     } catch (err) {
       console.error(err);
@@ -343,7 +294,6 @@ export default function AdminUsersPage() {
       const snap = await getDocs(
         query(collection(db, "users"), where("status", "==", "suspended"))
       );
-      // حذف جميع طلبات الدفع + المستخدمين الموقوفين
       await Promise.all(
         snap.docs.map(async (userDoc) => {
           const paymentsSnap = await getDocs(
@@ -353,7 +303,6 @@ export default function AdminUsersPage() {
           await deleteDoc(userDoc.ref);
         })
       );
-      // إزالتهم من الـ state
       setUsers((prev) => prev.filter((u) => u.status !== "suspended"));
     } catch (err) {
       console.error(err);
@@ -363,6 +312,8 @@ export default function AdminUsersPage() {
   };
 
   const filtered = users.filter((u) => {
+    // ✅ التغيير الوحيد: نخفي الحسابات غير المفعّلة من كل الفلاتر
+    if (u.status !== "active" && u.status !== "suspended") return false;
     const matchSearch =
       !search ||
       `${u.name} ${u.surname} ${u.email}`.toLowerCase().includes(search.toLowerCase());
@@ -449,10 +400,10 @@ export default function AdminUsersPage() {
             }}
             className="pr-10 pl-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm appearance-none font-bold text-gray-700 dark:text-gray-300"
           >
-            <option value="all">جميع الحسابات</option>
-            <option value="active">مفعّلة</option>
-            <option value="pending">قيد الانتظار</option>
-            <option value="waiting_verification">بانتظار التحقق</option>
+            <option value="all">جميع الحسابات المفعلة </option>
+            
+            
+            
             <option value="suspended">موقوفة</option>
           </select>
         </div>
@@ -472,10 +423,7 @@ export default function AdminUsersPage() {
             disabled={deletingAll}
             className="flex items-center gap-1.5 px-4 py-2 bg-red-500 text-white text-sm font-bold rounded-xl hover:bg-red-600 transition-all disabled:opacity-50 flex-shrink-0"
           >
-            {deletingAll
-              ? <Loader2 size={14} className="animate-spin" />
-              : <Trash2 size={14} />
-            }
+            {deletingAll ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
             حذف الكل
           </button>
         </div>
