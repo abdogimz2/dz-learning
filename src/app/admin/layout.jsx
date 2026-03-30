@@ -7,19 +7,21 @@ import { doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   Loader2, ShieldCheck, Home, LayoutDashboard,
-  CreditCard, BookOpen, LogOut, Users, ShoppingBag, Target,
+  CreditCard, BookOpen, LogOut, Users, ShoppingBag, Target, Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 
+
 const navItems = [
-  { href: "/admin",           icon: LayoutDashboard, label: "الرئيسية",       adminOnly: false },
-  { href: "/admin/payments",  icon: CreditCard,      label: "طلبات التفعيل",  adminOnly: false },
-  { href: "/admin/courses",   icon: BookOpen,        label: "إدارة المحتوى",  adminOnly: false },
-  { href: "/admin/tasks",     icon: Target,          label: "المهام اليومية", adminOnly: false },
-  { href: "/admin/users",     icon: Users,           label: "المستخدمين",     adminOnly: false },
-  { href: "/admin/shop",      icon: ShoppingBag,     label: "متجر النقاط",    adminOnly: false },
-  { href: "/admin/managers",  icon: ShieldCheck,     label: "إدارة الأدمن",   adminOnly: true  },
+  { href: "/admin",                    icon: LayoutDashboard, label: "الرئيسية",       adminOnly: false },
+  { href: "/admin/payments",           icon: CreditCard,      label: "طلبات التفعيل",  adminOnly: false },
+  { href: "/admin/courses",            icon: BookOpen,        label: "إدارة المحتوى",  adminOnly: false },
+  { href: "/admin/tasks",              icon: Target,          label: "المهام اليومية", adminOnly: false },
+  { href: "/admin/users",              icon: Users,           label: "المستخدمين",     adminOnly: false },
+  { href: "/admin/shop",               icon: ShoppingBag,     label: "متجر النقاط",    adminOnly: false },
+  { href: "/admin/payment-methods",    icon: Wallet,          label: "طرق الدفع",      adminOnly: false },
+  { href: "/admin/managers",           icon: ShieldCheck,     label: "إدارة الأدمن",   adminOnly: true  },
 ];
 
 export default function AdminLayout({ children }) {

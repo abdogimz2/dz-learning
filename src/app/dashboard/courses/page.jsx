@@ -7,7 +7,6 @@ import { BookOpen, GraduationCap, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 
-// ─── قاموس المواد — IDs بسيطة ومتسقة مع [id]/page.jsx ───────────────────────
 const ALL_SUBJECTS = {
   middle: [
     { id: "m1",  title: "رياضيات",       color: "blue",   icon: "📐" },
@@ -49,27 +48,29 @@ const ALL_SUBJECTS = {
   ],
 
   science_exp: [
-    { id: "se1", title: "لغة عربية",      color: "yellow", icon: "📖" },
-    { id: "se2", title: "فرنسية",         color: "red",    icon: "🇫🇷" },
-    { id: "se3", title: "إنجليزية",       color: "blue",   icon: "🇬🇧" },
-    { id: "se4", title: "رياضيات",        color: "blue",   icon: "📐" },
-    { id: "se5", title: "تاريخ",          color: "orange", icon: "🏛️" },
-    { id: "se6", title: "جغرافيا",        color: "teal",   icon: "🗺️" },
-    { id: "se7", title: "تربية إسلامية",  color: "emerald",icon: "☪️" },
-    { id: "se8", title: "فيزياء",         color: "purple", icon: "⚡" },
-    { id: "se9", title: "علوم طبيعية",    color: "green",  icon: "🌿" },
+    { id: "se1",  title: "لغة عربية",     color: "yellow", icon: "📖" },
+    { id: "se2",  title: "فرنسية",        color: "red",    icon: "🇫🇷" },
+    { id: "se3",  title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "se4",  title: "رياضيات",       color: "blue",   icon: "📐" },
+    { id: "se5",  title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "se6",  title: "جغرافيا",       color: "teal",   icon: "🗺️" },
+    { id: "se7",  title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    { id: "se8",  title: "فيزياء",        color: "purple", icon: "⚡" },
+    { id: "se9",  title: "علوم طبيعية",   color: "green",  icon: "🌿" },
+    { id: "se10", title: "فلسفة",         color: "purple", icon: "🧠" },
   ],
 
   science_math: [
-    { id: "sm1", title: "لغة عربية",      color: "yellow", icon: "📖" },
-    { id: "sm2", title: "فرنسية",         color: "red",    icon: "🇫🇷" },
-    { id: "sm3", title: "إنجليزية",       color: "blue",   icon: "🇬🇧" },
-    { id: "sm4", title: "رياضيات",        color: "blue",   icon: "📐" },
-    { id: "sm5", title: "تاريخ",          color: "orange", icon: "🏛️" },
-    { id: "sm6", title: "جغرافيا",        color: "teal",   icon: "🗺️" },
-    { id: "sm7", title: "تربية إسلامية",  color: "emerald",icon: "☪️" },
-    { id: "sm8", title: "فيزياء",         color: "purple", icon: "⚡" },
-    { id: "sm9", title: "علوم طبيعية",    color: "green",  icon: "🌿" },
+    { id: "sm1",  title: "لغة عربية",     color: "yellow", icon: "📖" },
+    { id: "sm2",  title: "فرنسية",        color: "red",    icon: "🇫🇷" },
+    { id: "sm3",  title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "sm4",  title: "رياضيات",       color: "blue",   icon: "📐" },
+    { id: "sm5",  title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "sm6",  title: "جغرافيا",       color: "teal",   icon: "🗺️" },
+    { id: "sm7",  title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    { id: "sm8",  title: "فيزياء",        color: "purple", icon: "⚡" },
+    { id: "sm9",  title: "علوم طبيعية",   color: "green",  icon: "🌿" },
+    { id: "sm10", title: "فلسفة",         color: "purple", icon: "🧠" },
   ],
 
   science_tech: [
@@ -81,6 +82,7 @@ const ALL_SUBJECTS = {
     { id: "st6", title: "جغرافيا",        color: "teal",   icon: "🗺️" },
     { id: "st7", title: "تربية إسلامية",  color: "emerald",icon: "☪️" },
     { id: "st8", title: "فيزياء",         color: "purple", icon: "⚡" },
+    { id: "st9", title: "فلسفة",          color: "purple", icon: "🧠" },
     // مادة الهندسة تُضاف ديناميكياً من subSpecialty
   ],
 
@@ -95,6 +97,7 @@ const ALL_SUBJECTS = {
     { id: "ec8",  title: "محاسبة",        color: "pink",   icon: "🧾" },
     { id: "ec9",  title: "اقتصاد",        color: "cyan",   icon: "📊" },
     { id: "ec10", title: "قانون",         color: "gray",   icon: "⚖️" },
+    { id: "ec11", title: "فلسفة",         color: "purple", icon: "🧠" },
   ],
 
   arts_philo: [
@@ -116,17 +119,15 @@ const ALL_SUBJECTS = {
     { id: "al5", title: "تاريخ",          color: "orange", icon: "🏛️" },
     { id: "al6", title: "جغرافيا",        color: "teal",   icon: "🗺️" },
     { id: "al7", title: "تربية إسلامية",  color: "emerald",icon: "☪️" },
+    { id: "al8", title: "فلسفة",          color: "purple", icon: "🧠" },
     // اللغة الثالثة تُضاف ديناميكياً
   ],
 };
 
-// ─── قاموس العناوين لكل id ────────────────────────────────────────────────────
-// يُستخدم في [id]/page.jsx لاسترجاع اسم المادة من الـ id
 export const SUBJECT_TITLE_MAP = Object.values(ALL_SUBJECTS)
   .flat()
   .reduce((acc, s) => { acc[s.id] = s.title; return acc; }, {});
 
-// ─── تحديد userLevel من بيانات المستخدم الفعلية ──────────────────────────────
 function getUserLevel(user) {
   if (!user) return null;
   if (user.level === "middle") return "middle";
@@ -155,7 +156,6 @@ function getUserLevel(user) {
   return null;
 }
 
-// ─── جلب مواد المستخدم ───────────────────────────────────────────────────────
 function getSubjectsForUser(user) {
   if (!user) return [];
 
@@ -164,7 +164,6 @@ function getSubjectsForUser(user) {
 
   const base = [...(ALL_SUBJECTS[userLevel] || [])];
 
-  // تقني رياضي — أضف مادة الهندسة الخاصة
   if (userLevel === "science_tech" && user.subSpecialty) {
     base.push({
       id:    "sub_specialty",
@@ -174,7 +173,6 @@ function getSubjectsForUser(user) {
     });
   }
 
-  // لغات أجنبية — أضف اللغة الثالثة
   if (userLevel === "arts_lang" && user.thirdLanguage) {
     base.push({
       id:    "third_lang",
@@ -187,16 +185,21 @@ function getSubjectsForUser(user) {
   return base;
 }
 
-// ─── مكون بطاقة المادة ───────────────────────────────────────────────────────
 function SubjectCard({ subject, index }) {
   const colorBg = {
-    blue: "bg-blue-50 dark:bg-blue-900/20", yellow: "bg-yellow-50 dark:bg-yellow-900/20",
-    purple: "bg-purple-50 dark:bg-purple-900/20", green: "bg-green-50 dark:bg-green-900/20",
-    red: "bg-red-50 dark:bg-red-900/20", orange: "bg-orange-50 dark:bg-orange-900/20",
-    teal: "bg-teal-50 dark:bg-teal-900/20", emerald: "bg-emerald-50 dark:bg-emerald-900/20",
-    cyan: "bg-cyan-50 dark:bg-cyan-900/20", gray: "bg-gray-50 dark:bg-gray-800",
-    pink: "bg-pink-50 dark:bg-pink-900/20", indigo: "bg-indigo-50 dark:bg-indigo-900/20",
-    violet: "bg-violet-50 dark:bg-violet-900/20",
+    blue:    "bg-blue-50 dark:bg-blue-900/20",
+    yellow:  "bg-yellow-50 dark:bg-yellow-900/20",
+    purple:  "bg-purple-50 dark:bg-purple-900/20",
+    green:   "bg-green-50 dark:bg-green-900/20",
+    red:     "bg-red-50 dark:bg-red-900/20",
+    orange:  "bg-orange-50 dark:bg-orange-900/20",
+    teal:    "bg-teal-50 dark:bg-teal-900/20",
+    emerald: "bg-emerald-50 dark:bg-emerald-900/20",
+    cyan:    "bg-cyan-50 dark:bg-cyan-900/20",
+    gray:    "bg-gray-50 dark:bg-gray-800",
+    pink:    "bg-pink-50 dark:bg-pink-900/20",
+    indigo:  "bg-indigo-50 dark:bg-indigo-900/20",
+    violet:  "bg-violet-50 dark:bg-violet-900/20",
   };
 
   return (
@@ -241,7 +244,6 @@ function SubjectCard({ subject, index }) {
   );
 }
 
-// ─── الصفحة الرئيسية ─────────────────────────────────────────────────────────
 export default function CoursesPage() {
   const user = useAuthStore((state) => state.user);
   const subjects = useMemo(() => getSubjectsForUser(user), [user]);

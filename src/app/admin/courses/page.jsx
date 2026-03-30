@@ -11,20 +11,16 @@ import {
 import { db } from "@/lib/firebase/config";
 import { collection, addDoc, serverTimestamp, getDocs, deleteDoc, updateDoc, query, orderBy, doc } from "firebase/firestore";
 
-// ─── الثوابت ──────────────────────────────────────────────────────────────────
-
 const LEVELS = [
   { value: "middle",            label: "التعليم المتوسط" },
   { value: "1sec_science",      label: "السنة الأولى — علوم وتكنولوجيا" },
   { value: "1sec_arts",         label: "السنة الأولى — آداب" },
-  // ✅ السنة الثانية منفصلة
   { value: "2sec_science_exp",  label: "السنة الثانية — علوم تجريبية" },
   { value: "2sec_science_math", label: "السنة الثانية — رياضيات" },
   { value: "2sec_science_tech", label: "السنة الثانية — تقني رياضي" },
   { value: "2sec_science_eco",  label: "السنة الثانية — تسيير واقتصاد" },
   { value: "2sec_arts_philo",   label: "السنة الثانية — آداب وفلسفة" },
   { value: "2sec_arts_lang",    label: "السنة الثانية — لغات أجنبية" },
-  // ✅ السنة الثالثة منفصلة
   { value: "science_exp",       label: "السنة الثالثة — علوم تجريبية" },
   { value: "science_math",      label: "السنة الثالثة — رياضيات" },
   { value: "science_tech",      label: "السنة الثالثة — تقني رياضي" },
@@ -42,13 +38,13 @@ const SUBJECTS_BY_LEVEL = {
   "2sec_science_tech":  ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","هندسة كهربائية","هندسة ميكانيكية","هندسة مدنية","هندسة الطرائق"],
   "2sec_science_eco":   ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","محاسبة","اقتصاد","قانون"],
   "2sec_arts_philo":    ["رياضيات","لغة عربية","إنجليزية","فرنسية","فلسفة","تاريخ","جغرافيا","تربية إسلامية"],
-  "2sec_arts_lang":     ["رياضيات","لغة عربية","إنجليزية","فرنسية","تاريخ","جغرافيا","تربية إسلامية","لغة ألمانية","لغة إسبانية","لغة إيطالية"],
-  science_exp:          ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم"],
-  science_math:         ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم"],
-  science_tech:         ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","هندسة كهربائية","هندسة ميكانيكية","هندسة مدنية","هندسة الطرائق"],
-  science_eco:          ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","محاسبة","اقتصاد","قانون"],
+  "2sec_arts_lang":     ["رياضيات","لغة عربية","إنجليزية","فرنسية","فلسفة","تاريخ","جغرافيا","تربية إسلامية","لغة ألمانية","لغة إسبانية","لغة إيطالية"],
+  science_exp:          ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم","فلسفة"],
+  science_math:         ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم","فلسفة"],
+  science_tech:         ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","هندسة كهربائية","هندسة ميكانيكية","هندسة مدنية","هندسة الطرائق","فلسفة"],
+  science_eco:          ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","محاسبة","اقتصاد","قانون","فلسفة"],
   arts_philo:           ["رياضيات","لغة عربية","إنجليزية","فرنسية","فلسفة","تاريخ","جغرافيا","تربية إسلامية"],
-  arts_lang:            ["رياضيات","لغة عربية","إنجليزية","فرنسية","تاريخ","جغرافيا","تربية إسلامية","لغة ألمانية","لغة إسبانية","لغة إيطالية"],
+  arts_lang:            ["رياضيات","لغة عربية","إنجليزية","فرنسية","فلسفة","تاريخ","جغرافيا","تربية إسلامية","لغة ألمانية","لغة إسبانية","لغة إيطالية"],
 };
 
 const SEMESTERS = [
@@ -58,7 +54,6 @@ const SEMESTERS = [
   { value: "final", label: "الفصل النهائي (بكالوريا)" },
 ];
 
-// ✅ حُذف "حل التمرين" — مدمج الآن مع التمرين
 const CONTENT_TYPES = [
   { value: "lesson",   label: "درس",         icon: BookOpen,   color: "blue"   },
   { value: "exercise", label: "تمرين",        icon: FileText,   color: "emerald"},
@@ -82,7 +77,6 @@ async function uploadToCloudinary(file) {
   return data.secure_url;
 }
 
-// ─── Select ───────────────────────────────────────────────────────────────────
 function Select({ label, value, onChange, options, placeholder, required }) {
   return (
     <div>
@@ -103,15 +97,12 @@ function Select({ label, value, onChange, options, placeholder, required }) {
   );
 }
 
-// ─── ✅ مكون رفع ملفات متعددة ─────────────────────────────────────────────────
 function MultiFileUpload({ label, files, onAdd, onRemove, accept, hint, required }) {
   return (
     <div>
       <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
-
-      {/* الملفات المضافة */}
       {files.length > 0 && (
         <div className="space-y-2 mb-3">
           {files.map((file, idx) => (
@@ -129,8 +120,6 @@ function MultiFileUpload({ label, files, onAdd, onRemove, accept, hint, required
           ))}
         </div>
       )}
-
-      {/* زر إضافة ملف */}
       <label className="flex items-center justify-center gap-3 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-4 cursor-pointer hover:border-primary transition-colors bg-gray-50 dark:bg-gray-800/50">
         <Upload className="text-gray-400 flex-shrink-0" size={22}/>
         <div className="text-center">
@@ -146,16 +135,14 @@ function MultiFileUpload({ label, files, onAdd, onRemove, accept, hint, required
   );
 }
 
-// ─── مكوّن إدارة المحتوى (حذف + تعديل) ──────────────────────────────────────
 function ManageContent({ showToast }) {
   const [items,      setItems]      = useState([]);
   const [loading,    setLoading]    = useState(false);
   const [deleting,   setDeleting]   = useState(null);
-  const [editItem,   setEditItem]   = useState(null); // العنصر قيد التعديل
+  const [editItem,   setEditItem]   = useState(null);
   const [saving,     setSaving]     = useState(false);
-  const [confirmDel, setConfirmDel] = useState(null); // id قيد تأكيد الحذف
+  const [confirmDel, setConfirmDel] = useState(null);
 
-  // فلاتر
   const [filterType,    setFilterType]    = useState("all");
   const [filterLevel,   setFilterLevel]   = useState("");
   const [filterSubject, setFilterSubject] = useState("");
@@ -173,7 +160,6 @@ function ManageContent({ showToast }) {
 
   useEffect(() => { fetchContent(); }, []);
 
-  // ─── حذف ───
   const handleDelete = async (id) => {
     setDeleting(id);
     try {
@@ -184,7 +170,6 @@ function ManageContent({ showToast }) {
     finally { setDeleting(null); setConfirmDel(null); }
   };
 
-  // ─── حفظ التعديل ───
   const handleSave = async () => {
     if (!editItem) return;
     setSaving(true);
@@ -198,9 +183,7 @@ function ManageContent({ showToast }) {
     finally { setSaving(false); }
   };
 
-  // ─── فلترة ───
-  const TYPE_LABELS_MAP = { lesson:"درس", exercise:"تمرين", exam:"اختبار", qa:"سؤال وجواب" };
-  const subjectOptions  = (SUBJECTS_BY_LEVEL[filterLevel] || []);
+  const subjectOptions = (SUBJECTS_BY_LEVEL[filterLevel] || []);
 
   const filtered = items.filter(item => {
     if (filterType    !== "all" && item.type    !== filterType)    return false;
@@ -218,7 +201,6 @@ function ManageContent({ showToast }) {
   return (
     <div className="space-y-5">
 
-      {/* ─── تأكيد الحذف ─── */}
       <AnimatePresence>
         {confirmDel && (
           <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
@@ -246,14 +228,12 @@ function ManageContent({ showToast }) {
         )}
       </AnimatePresence>
 
-      {/* ─── نافذة التعديل ─── */}
       <AnimatePresence>
         {editItem && (
           <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
             className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto" dir="rtl">
             <motion.div initial={{scale:0.95,y:20}} animate={{scale:1,y:0}} exit={{scale:0.95}}
               className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-2xl w-full max-w-2xl space-y-4 my-4">
-
               <div className="flex items-center justify-between">
                 <h3 className="font-black text-xl text-gray-800 dark:text-white">تعديل المحتوى</h3>
                 <button onClick={() => setEditItem(null)}
@@ -261,8 +241,6 @@ function ManageContent({ showToast }) {
                   <X size={20}/>
                 </button>
               </div>
-
-              {/* المستوى والمادة والفصل */}
               <div className="grid grid-cols-3 gap-3">
                 <Select label="المستوى" value={editItem.level}
                   onChange={v => setEditItem(p => ({...p, level: v, subject: ""}))}
@@ -275,8 +253,6 @@ function ManageContent({ showToast }) {
                   onChange={v => setEditItem(p => ({...p, semester: v}))}
                   options={SEMESTERS} placeholder="اختر"/>
               </div>
-
-              {/* العنوان */}
               {editItem.type !== "qa" && (
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">العنوان</label>
@@ -284,8 +260,6 @@ function ManageContent({ showToast }) {
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-gray-800 dark:text-gray-200"/>
                 </div>
               )}
-
-              {/* سؤال وجواب */}
               {editItem.type === "qa" && editItem.qaType !== "image" && (
                 <>
                   <div>
@@ -302,8 +276,6 @@ function ManageContent({ showToast }) {
                   </div>
                 </>
               )}
-
-              {/* وصف */}
               {editItem.type !== "qa" && (
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">الوصف (اختياري)</label>
@@ -312,8 +284,6 @@ function ManageContent({ showToast }) {
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-gray-800 dark:text-gray-200 resize-none"/>
                 </div>
               )}
-
-              {/* نشر / إخفاء */}
               <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl">
                 <button onClick={() => setEditItem(p=>({...p, isPublished: !p.isPublished}))}
                   className={`relative w-12 h-6 rounded-full transition-all ${editItem.isPublished ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"}`}>
@@ -323,8 +293,6 @@ function ManageContent({ showToast }) {
                   {editItem.isPublished ? "منشور — يظهر للطلاب" : "مخفي — لا يظهر للطلاب"}
                 </span>
               </div>
-
-              {/* أزرار */}
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setEditItem(null)}
                   className="flex-1 py-3 rounded-2xl border-2 border-gray-200 dark:border-gray-700 font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-50 transition-all">
@@ -341,7 +309,6 @@ function ManageContent({ showToast }) {
         )}
       </AnimatePresence>
 
-      {/* ─── فلاتر البحث ─── */}
       <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-black text-gray-800 dark:text-white text-lg">
@@ -353,8 +320,6 @@ function ManageContent({ showToast }) {
             تحديث
           </button>
         </div>
-
-        {/* بحث */}
         <div className="relative">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={16}/>
           <input value={searchText} onChange={e => setSearchText(e.target.value)}
@@ -362,10 +327,7 @@ function ManageContent({ showToast }) {
             className="w-full pr-10 pl-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-sm text-gray-800 dark:text-gray-200"
             dir="rtl"/>
         </div>
-
-        {/* فلاتر */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {/* نوع المحتوى */}
           <div className="relative">
             <select value={filterType} onChange={e => setFilterType(e.target.value)}
               className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm appearance-none text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-primary/20">
@@ -374,7 +336,6 @@ function ManageContent({ showToast }) {
             </select>
             <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14}/>
           </div>
-          {/* المستوى */}
           <div className="relative">
             <select value={filterLevel} onChange={e => { setFilterLevel(e.target.value); setFilterSubject(""); }}
               className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm appearance-none text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-primary/20">
@@ -383,7 +344,6 @@ function ManageContent({ showToast }) {
             </select>
             <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14}/>
           </div>
-          {/* المادة */}
           <div className="relative">
             <select value={filterSubject} onChange={e => setFilterSubject(e.target.value)}
               disabled={!filterLevel}
@@ -393,7 +353,6 @@ function ManageContent({ showToast }) {
             </select>
             <ChevronDown className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14}/>
           </div>
-          {/* مسح الفلاتر */}
           <button onClick={() => { setFilterType("all"); setFilterLevel(""); setFilterSubject(""); setSearchText(""); }}
             className="px-3 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-200 transition-all">
             مسح الفلاتر ✕
@@ -401,7 +360,6 @@ function ManageContent({ showToast }) {
         </div>
       </div>
 
-      {/* ─── القائمة ─── */}
       {loading ? (
         <div className="flex justify-center py-16">
           <Loader2 className="animate-spin text-primary" size={32}/>
@@ -419,17 +377,12 @@ function ManageContent({ showToast }) {
             const displayTitle = item.type === "qa" && item.qaType === "image"
               ? "🖼️ سؤال بصورة"
               : item.title || item.question || "—";
-
             return (
               <motion.div key={item.id} layout
                 className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all">
-
-                {/* أيقونة النوع */}
                 <div className={`p-2.5 rounded-xl flex-shrink-0 bg-${typeColor}-50 dark:bg-${typeColor}-900/20`}>
                   <TypeIcon className={`text-${typeColor}-500`} size={18}/>
                 </div>
-
-                {/* المعلومات */}
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-gray-800 dark:text-gray-200 text-sm truncate">{displayTitle}</p>
                   <p className="text-xs text-gray-400 mt-0.5 truncate">
@@ -438,8 +391,6 @@ function ManageContent({ showToast }) {
                     {item.semester && ` · ${SEMESTERS.find(s=>s.value===item.semester)?.label||""}`}
                   </p>
                 </div>
-
-                {/* نشر/مخفي */}
                 <span className={`flex-shrink-0 text-xs font-bold px-2 py-1 rounded-lg ${
                   item.isPublished
                     ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20"
@@ -447,8 +398,6 @@ function ManageContent({ showToast }) {
                 }`}>
                   {item.isPublished ? "منشور" : "مخفي"}
                 </span>
-
-                {/* أزرار */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button onClick={() => setEditItem({...item})}
                     className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 hover:bg-blue-100 transition-all">
@@ -456,10 +405,7 @@ function ManageContent({ showToast }) {
                   </button>
                   <button onClick={() => setConfirmDel(item.id)} disabled={deleting === item.id}
                     className="p-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 transition-all disabled:opacity-50">
-                    {deleting === item.id
-                      ? <Loader2 size={15} className="animate-spin"/>
-                      : <Trash2 size={15}/>
-                    }
+                    {deleting === item.id ? <Loader2 size={15} className="animate-spin"/> : <Trash2 size={15}/>}
                   </button>
                 </div>
               </motion.div>
@@ -471,7 +417,6 @@ function ManageContent({ showToast }) {
   );
 }
 
-// ─── الصفحة الرئيسية ──────────────────────────────────────────────────────────
 export default function AdminCoursesPage() {
   const [activeType, setActiveType] = useState("lesson");
   const [submitting, setSubmitting] = useState(false);
@@ -484,30 +429,22 @@ export default function AdminCoursesPage() {
   const [title,    setTitle]    = useState("");
   const [desc,     setDesc]     = useState("");
 
-  // ✅ ملفات متعددة
   const [mainFiles,     setMainFiles]     = useState([]);
   const [solutionFiles, setSolutionFiles] = useState([]);
 
   const [question, setQuestion] = useState("");
   const [answer,   setAnswer]   = useState("");
-  // ✅ الحقل الموحد للأسئلة النصية
   const [qaText,   setQaText]   = useState("");
-  // ✅ وضع الإدخال: "text" | "image"
   const [qaMode,   setQaMode]   = useState("text");
-  // ✅ أسئلة الصور — كل عنصر: { questionFile, answerFile, questionPreview, answerPreview }
   const [imageQAs, setImageQAs] = useState([{ questionFile: null, answerFile: null, questionPreview: null, answerPreview: null }]);
 
-  // تحليل النص إلى أسئلة وأجوبة
   const parsedQA = qaText
     .split("\n")
     .map(line => line.trim())
     .filter(line => line.includes(":"))
     .map(line => {
       const idx = line.indexOf(":");
-      return {
-        question: line.slice(0, idx).trim(),
-        answer:   line.slice(idx + 1).trim(),
-      };
+      return { question: line.slice(0, idx).trim(), answer: line.slice(idx + 1).trim() };
     })
     .filter(qa => qa.question && qa.answer);
 
@@ -528,7 +465,6 @@ export default function AdminCoursesPage() {
     setUploadProgress({ current: 0, total: 0 });
   };
 
-  // ✅ رفع الملفات واحداً تلو الآخر مع تتبع التقدم
   const uploadFiles = async (files, startIndex = 0) => {
     const urls = [];
     for (let i = 0; i < files.length; i++) {
@@ -562,7 +498,6 @@ export default function AdminCoursesPage() {
 
     try {
       if (activeType === "qa" && qaMode === "image") {
-        // ✅ رفع وحفظ أسئلة الصور
         const validQAs = imageQAs.filter(qa => qa.questionFile);
         let uploadCount = 0;
         const savedQAs = [];
@@ -580,15 +515,11 @@ export default function AdminCoursesPage() {
         }
         await Promise.all(savedQAs.map(({ questionUrl, answerUrl }) =>
           addDoc(collection(db, "content"), {
-            type:         "qa",
-            qaType:       "image",        // ✅ تمييز نوع السؤال
+            type: "qa", qaType: "image",
             level, subject, semester,
-            title:        "image_question",
-            description:  "image_answer",
-            question:     "image_question",
-            answer:       "image_answer",
-            questionImageUrl: questionUrl,
-            answerImageUrl:   answerUrl,
+            title: "image_question", description: "image_answer",
+            question: "image_question", answer: "image_answer",
+            questionImageUrl: questionUrl, answerImageUrl: answerUrl,
             fileUrl: null, solutionUrl: null, fileUrls: [], solutionUrls: [],
             createdAt: serverTimestamp(), updatedAt: serverTimestamp(), isPublished: true,
           })
@@ -596,7 +527,6 @@ export default function AdminCoursesPage() {
         showToast("success", `تم إضافة ${savedQAs.length} سؤال بصورة بنجاح! ✅`);
 
       } else if (activeType === "qa" && qaMode === "text") {
-        // ✅ حفظ الأسئلة النصية
         await Promise.all(parsedQA.map(qa =>
           addDoc(collection(db, "content"), {
             type: "qa", qaType: "text",
@@ -610,7 +540,6 @@ export default function AdminCoursesPage() {
         showToast("success", `تم إضافة ${parsedQA.length} سؤال بنجاح! ✅`);
 
       } else {
-        // ✅ درس / تمرين / اختبار
         const fileUrls     = mainFiles.length     > 0 ? await uploadFiles(mainFiles, 0) : [];
         const solutionUrls = solutionFiles.length > 0 ? await uploadFiles(solutionFiles, mainFiles.length) : [];
         setUploading(false);
@@ -638,17 +567,16 @@ export default function AdminCoursesPage() {
     }
   };
 
-  const [activeTab, setActiveTab] = useState("add"); // "add" | "manage"
+  const [activeTab, setActiveTab] = useState("add");
 
   const currentType    = CONTENT_TYPES.find((t) => t.value === activeType);
   const subjectOptions = (SUBJECTS_BY_LEVEL[level] || []).map((s) => ({ value: s, label: s }));
-  const isThirdYear     = level && !level.startsWith("2sec") && !level.startsWith("1sec") && level !== "middle";
+  const isThirdYear    = level && !level.startsWith("2sec") && !level.startsWith("1sec") && level !== "middle";
   const semesterOptions = isThirdYear ? SEMESTERS : SEMESTERS.filter(s => s.value !== "final");
 
   return (
     <div className="space-y-8" dir="rtl">
 
-      {/* Toast */}
       <AnimatePresence>
         {toast && (
           <motion.div initial={{ opacity:0, y:-20 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-20 }}
@@ -661,13 +589,11 @@ export default function AdminCoursesPage() {
         )}
       </AnimatePresence>
 
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-black text-gray-900 dark:text-white">إدارة المحتوى</h1>
         <p className="text-gray-500 mt-1">أضف دروساً، تمارين، اختبارات، وأسئلة لكل مادة ومستوى</p>
       </div>
 
-      {/* ─── تبويبان ─── */}
       <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl w-fit">
         {[
           { id: "add",    label: "➕ إضافة محتوى" },
@@ -684,24 +610,19 @@ export default function AdminCoursesPage() {
         ))}
       </div>
 
-      {/* ─── تبويب الإدارة ─── */}
-      {activeTab === "manage" && (
-        <ManageContent showToast={showToast}/>
-      )}
+      {activeTab === "manage" && <ManageContent showToast={showToast}/>}
 
-      {/* ─── تبويب الإضافة ─── */}
       {activeTab === "add" && (<>
 
-      {/* نوع المحتوى */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {CONTENT_TYPES.map((type) => {
           const Icon   = type.icon;
           const active = activeType === type.value;
           const colorMap = {
-            blue:    active ? "bg-blue-500 text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/30"       : "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100",
+            blue:    active ? "bg-blue-500 text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/30"          : "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100",
             emerald: active ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200 dark:shadow-emerald-900/30" : "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100",
-            purple:  active ? "bg-purple-500 text-white shadow-lg shadow-purple-200 dark:shadow-purple-900/30" : "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100",
-            orange:  active ? "bg-orange-500 text-white shadow-lg shadow-orange-200 dark:shadow-orange-900/30" : "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 hover:bg-orange-100",
+            purple:  active ? "bg-purple-500 text-white shadow-lg shadow-purple-200 dark:shadow-purple-900/30"    : "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100",
+            orange:  active ? "bg-orange-500 text-white shadow-lg shadow-orange-200 dark:shadow-orange-900/30"    : "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 hover:bg-orange-100",
           };
           return (
             <button key={type.value} onClick={() => { setActiveType(type.value); resetForm(); }}
@@ -713,7 +634,6 @@ export default function AdminCoursesPage() {
         })}
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit}
         className="bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 shadow-sm p-6 md:p-8 space-y-6">
 
@@ -722,7 +642,6 @@ export default function AdminCoursesPage() {
           <h2 className="text-xl font-black text-gray-800 dark:text-white">إضافة {currentType?.label}</h2>
         </div>
 
-        {/* المستوى والمادة والفصل */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Select label="المستوى الدراسي" value={level}
             onChange={(v) => { setLevel(v); setSubject(""); setSemester(""); }}
@@ -734,11 +653,8 @@ export default function AdminCoursesPage() {
             options={semesterOptions} placeholder="اختر الفصل" required/>
         </div>
 
-        {/* سؤال وجواب */}
         {activeType === "qa" ? (
           <div className="space-y-5">
-
-            {/* ✅ مبدّل الوضع */}
             <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl">
               {[
                 { value: "text",  label: "✏️ نص",   desc: "كتابة السؤال والجواب" },
@@ -755,7 +671,6 @@ export default function AdminCoursesPage() {
               ))}
             </div>
 
-            {/* ─── وضع النص ─── */}
             {qaMode === "text" && (
               <>
                 <div className="bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800 rounded-2xl p-4">
@@ -790,14 +705,12 @@ export default function AdminCoursesPage() {
               </>
             )}
 
-            {/* ─── وضع الصور ─── */}
             {qaMode === "image" && (
               <div className="space-y-4">
                 <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
                   <p className="text-sm font-black text-blue-700 dark:text-blue-400 mb-1">🖼️ كيف يعمل وضع الصور</p>
                   <p className="text-sm text-blue-600 dark:text-blue-300">ارفع صورة للسؤال (مطلوبة) وصورة للجواب (اختيارية). مثالي للرموز الرياضية.</p>
                 </div>
-
                 {imageQAs.map((qa, idx) => (
                   <div key={idx} className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
@@ -811,7 +724,6 @@ export default function AdminCoursesPage() {
                       )}
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      {/* صورة السؤال */}
                       <div>
                         <p className="text-xs font-bold text-gray-600 dark:text-gray-400 mb-1.5">❓ صورة السؤال <span className="text-red-500">*</span></p>
                         {qa.questionPreview ? (
@@ -838,7 +750,6 @@ export default function AdminCoursesPage() {
                           </label>
                         )}
                       </div>
-                      {/* صورة الجواب */}
                       <div>
                         <p className="text-xs font-bold text-gray-600 dark:text-gray-400 mb-1.5">💡 صورة الجواب <span className="text-gray-400">(اختياري)</span></p>
                         {qa.answerPreview ? (
@@ -868,14 +779,11 @@ export default function AdminCoursesPage() {
                     </div>
                   </div>
                 ))}
-
-                {/* زر إضافة سؤال جديد */}
                 <button type="button"
                   onClick={() => setImageQAs(prev => [...prev, { questionFile: null, answerFile: null, questionPreview: null, answerPreview: null }])}
                   className="w-full py-3 border-2 border-dashed border-orange-300 dark:border-orange-700 rounded-2xl text-orange-500 font-bold text-sm hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all flex items-center justify-center gap-2">
                   <Plus size={18}/> إضافة سؤال آخر
                 </button>
-
                 {imageQAs.filter(qa => qa.questionFile).length > 0 && (
                   <div className="text-center text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 py-2 rounded-xl">
                     ✅ {imageQAs.filter(qa => qa.questionFile).length} سؤال جاهز للرفع
@@ -886,7 +794,6 @@ export default function AdminCoursesPage() {
           </div>
         ) : (
           <div className="space-y-5">
-            {/* العنوان */}
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                 العنوان <span className="text-red-500">*</span>
@@ -899,16 +806,12 @@ export default function AdminCoursesPage() {
                 }
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-800 dark:text-gray-200"/>
             </div>
-
-            {/* الوصف */}
             <div>
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">الوصف (اختياري)</label>
               <textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={2}
                 placeholder="وصف مختصر عن المحتوى..."
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none text-gray-800 dark:text-gray-200"/>
             </div>
-
-            {/* ✅ ملفات متعددة للمحتوى الرئيسي */}
             <MultiFileUpload
               label={
                 activeType === "lesson"   ? "ملفات الدرس (PDF أو صورة)" :
@@ -921,8 +824,6 @@ export default function AdminCoursesPage() {
               accept=".pdf,image/*"
               hint="PDF أو صورة — يمكن إضافة أكثر من ملف"
             />
-
-            {/* ✅ ملفات الحل مدمجة مع التمرين */}
             {activeType === "exercise" && (
               <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-4">
                 <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-3 flex items-center gap-2">
@@ -941,7 +842,6 @@ export default function AdminCoursesPage() {
           </div>
         )}
 
-        {/* حالة الرفع */}
         {uploading && (
           <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
             <Loader2 className="animate-spin text-blue-500 flex-shrink-0" size={18}/>
@@ -959,7 +859,6 @@ export default function AdminCoursesPage() {
           </div>
         )}
 
-        {/* Submit */}
         <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
           <button type="submit" disabled={submitting}
             className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary to-blue-600 text-white font-black rounded-2xl hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0">

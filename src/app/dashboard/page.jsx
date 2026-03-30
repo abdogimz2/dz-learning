@@ -36,17 +36,16 @@ function getUserLevel(user) {
 
 // عدد المواد — مطابق تماماً لـ ALL_SUBJECTS في courses-page-v2
 const SUBJECTS_COUNT = {
-  middle:       10, // m1→m10
-  "1sec_science":10, // sc1→sc10
-  "1sec_arts":  10, // ac1→ac10
-  science_exp:   9, // se1→se9
-  science_math:  9, // sm1→sm9
-  science_tech:  8, // st1→st8 (+ subSpecialty ديناميكياً)
-  science_eco:  10, // ec1→ec10
-  arts_philo:    8, // ap1→ap8
-  arts_lang:     7, // al1→al7 (+ thirdLanguage ديناميكياً)
+  middle:        10,
+  "1sec_science":10,
+  "1sec_arts":   10,
+  science_exp:   10, // +1 فلسفة
+  science_math:  10, // +1 فلسفة
+  science_tech:   9, // +1 فلسفة
+  science_eco:   11, // +1 فلسفة
+  arts_philo:     8,
+  arts_lang:      8, // +1 فلسفة
 };
-
 function getSubjectsCount(user) {
   const level = getUserLevel(user);
   if (!level) return 0;
