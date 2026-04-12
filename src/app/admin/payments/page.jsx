@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CreditCard, CheckCircle, XCircle, Clock,
-  Loader2, Eye, Filter, RefreshCw,
+  Loader2, Eye, RefreshCw,
   AlertCircle, X, MessageSquare,
 } from "lucide-react";
 import { db } from "@/lib/firebase/config";
@@ -15,31 +15,39 @@ import {
 } from "firebase/firestore";
 
 const STATUS_CONFIG = {
-  pending:  { label: "معلق",   color: "orange", icon: Clock },
-  approved: { label: "مقبول",  color: "emerald", icon: CheckCircle },
-  rejected: { label: "مرفوض", color: "red",     icon: XCircle },
+  pending:  { label: "معلق",   color: "orange",  icon: Clock        },
+  approved: { label: "مقبول",  color: "emerald", icon: CheckCircle  },
+  rejected: { label: "مرفوض", color: "red",      icon: XCircle      },
 };
 
-// ─── حساب تاريخ انتهاء الموسم الدراسي ───────────────────────────────────────
-// الموسم: سبتمبر 1 → جوان 30
-// مثال: إذا فعّلنا في أكتوبر 2024 → ينتهي 30 جوان 2025
-// إذا فعّلنا في مارس 2025 → ينتهي 30 جوان 2025
-// إذا فعّلنا في جويلية 2025 (بعد انتهاء الموسم) → ينتهي 30 جوان 2026
 function getSubscriptionEnd() {
-  const now = new Date();
-  const month = now.getMonth(); // 0=يناير ... 8=سبتمبر
+  const now   = new Date();
+  const month = now.getMonth();
   const year  = now.getFullYear();
-
-  // إذا كنا في جويلية (6) أو أوت (7) — الموسم القادم
-  if (month >= 6 && month <= 7) {
-    return new Date(year + 1, 5, 30, 23, 59, 59); // 30 جوان السنة القادمة
-  }
-  // إذا كنا من سبتمبر (8) → ديسمبر (11) — ينتهي جوان نفس السنة +1
-  if (month >= 8) {
-    return new Date(year + 1, 5, 30, 23, 59, 59);
-  }
-  // إذا كنا من يناير (0) → جوان (5) — ينتهي جوان نفس السنة
+  if (month >= 6 && month <= 7) return new Date(year + 1, 5, 30, 23, 59, 59);
+  if (month >= 8)               return new Date(year + 1, 5, 30, 23, 59, 59);
   return new Date(year, 5, 30, 23, 59, 59);
+}
+
+// ─── تحويل رابط Cloudinary PDF إلى رابط قابل للعرض ──────────────────────────
+function getPdfViewUrl(rawUrl) {
+  if (!rawUrl) return rawUrl;
+  if (rawUrl.includes("/image/upload/")) {
+    return rawUrl.replace("/image/upload/", "/raw/upload/");
+  }
+  return rawUrl;
+}
+
+function isPdfUrl(url) {
+  if (!url) return false;
+  const u = url.toLowerCase();
+  return (
+    u.endsWith(".pdf") ||
+    u.includes("application/pdf") ||
+    u.includes("%2Fpdf") ||
+    u.includes("raw=1") ||
+    u.includes("/raw/upload/")
+  );
 }
 
 // ─── Modal سبب الرفض ─────────────────────────────────────────────────────────
@@ -74,49 +82,33 @@ function RejectModal({ payment, onConfirm, onClose, loading }) {
           <p className="text-sm text-gray-500">
             سيتم إشعار <span className="font-bold text-gray-700 dark:text-gray-300">{payment.userName}</span> بسبب الرفض.
           </p>
-
-          {/* أسباب جاهزة */}
           <div className="space-y-2">
             {REASONS.map((r) => (
-              <button
-                key={r}
-                onClick={() => setReason(r)}
+              <button key={r} onClick={() => setReason(r)}
                 className={`w-full text-right px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
                   reason === r
                     ? "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800 text-red-700 dark:text-red-400"
                     : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-red-300"
-                }`}
-              >
+                }`}>
                 {r}
               </button>
             ))}
           </div>
-
-          {/* سبب مخصص */}
           <div>
             <label className="block text-xs font-bold text-gray-500 mb-2">أو اكتب سبباً مخصصاً:</label>
-            <textarea
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={3}
+            <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3}
               placeholder="اكتب سبب الرفض..."
-              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-all text-sm resize-none"
-            />
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition-all text-sm resize-none"/>
           </div>
         </div>
 
         <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 transition-all"
-          >
+          <button onClick={onClose}
+            className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 transition-all">
             إلغاء
           </button>
-          <button
-            onClick={() => onConfirm(reason)}
-            disabled={!reason.trim() || loading}
-            className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-          >
+          <button onClick={() => onConfirm(reason)} disabled={!reason.trim() || loading}
+            className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
             {loading ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />}
             تأكيد الرفض
           </button>
@@ -126,10 +118,89 @@ function RejectModal({ payment, onConfirm, onClose, loading }) {
   );
 }
 
+// ─── Modal عرض الوصل ─────────────────────────────────────────────────────────
+function ReceiptModal({ payment, onClose }) {
+  const url    = payment.receiptUrl || "";
+  const isPdf  = isPdfUrl(url);
+  const pdfUrl = isPdf ? getPdfViewUrl(url) : url;
+
+  // رابط Google Docs Viewer للـ PDFs القديمة التي رُفعت على /image/upload/
+  const viewerUrl = url.includes("/image/upload/") && isPdf
+    ? `https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true`
+    : pdfUrl;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative max-w-3xl w-full bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-2xl"
+        dir="rtl"
+      >
+        {/* رأس الـ Modal */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-3">
+            <p className="font-bold text-gray-800 dark:text-white">
+              وصل دفع — {payment.userName}
+            </p>
+            {isPdf && (
+              <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold px-2 py-0.5 rounded-lg border border-red-200 dark:border-red-800">
+                PDF
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <a href={pdfUrl} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-xl text-xs font-bold hover:bg-primary/20 transition-all">
+              فتح خارجياً ↗
+            </a>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* المحتوى */}
+        <div className="p-4">
+          {isPdf ? (
+            <div className="w-full rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+              <iframe
+                src={viewerUrl}
+                title="وصل الدفع PDF"
+                className="w-full"
+                style={{ height: "70vh", border: "none" }}
+              />
+              <div className="p-3 text-center border-t border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-400 mb-2">إذا لم يظهر الملف انقر الزر أدناه</p>
+                <a href={pdfUrl} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-hover transition-all">
+                  تحميل / فتح الـ PDF ↗
+                </a>
+              </div>
+            </div>
+          ) : (
+            <img
+              src={url}
+              alt="وصل الدفع"
+              className="w-full max-h-[70vh] object-contain rounded-xl"
+            />
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── بطاقة طلب الدفع ─────────────────────────────────────────────────────────
 function PaymentCard({ payment, onApprove, onReject, updating }) {
   const [showReceipt, setShowReceipt] = useState(false);
-  const status = STATUS_CONFIG[payment.status] || STATUS_CONFIG.pending;
+
+  const status     = STATUS_CONFIG[payment.status] || STATUS_CONFIG.pending;
   const StatusIcon = status.icon;
 
   const colorMap = {
@@ -139,171 +210,78 @@ function PaymentCard({ payment, onApprove, onReject, updating }) {
   };
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden"
-    >
-      <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* معلومات الطالب */}
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-black text-lg flex-shrink-0">
-            {payment.userName?.[0] || "؟"}
-          </div>
-          <div className="min-w-0">
-            <p className="font-black text-gray-800 dark:text-white">{payment.userName}</p>
-            <p className="text-sm text-gray-500 truncate">{payment.userEmail}</p>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${colorMap[status.color]} flex items-center gap-1`}>
-                <StatusIcon size={11} /> {status.label}
-              </span>
-              <span className="text-xs text-gray-400">{payment.amount} د.ج</span>
-              {payment.level && (
-                <span className="text-xs text-gray-400">{payment.level}</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* أزرار */}
-        <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-          {/* عرض الوصل */}
-          {payment.receiptUrl && (
-            <button
-              onClick={() => setShowReceipt(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl font-bold hover:bg-blue-100 transition-all text-sm border border-blue-200 dark:border-blue-800"
-            >
-              <Eye size={15} /> الوصل
-            </button>
-          )}
-
-          {/* أزرار الموافقة/الرفض — فقط للطلبات المعلقة */}
-          {payment.status === "pending" && (
-            <>
-              <button
-                disabled={updating === payment.id}
-                onClick={() => onApprove(payment.id)}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-all disabled:opacity-50 text-sm shadow-sm"
-              >
-                {updating === payment.id
-                  ? <Loader2 size={15} className="animate-spin" />
-                  : <CheckCircle size={15} />
-                }
-                قبول
-              </button>
-              <button
-                disabled={updating === payment.id}
-                onClick={() => onReject(payment)}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-bold hover:bg-red-100 transition-all disabled:opacity-50 text-sm border border-red-200 dark:border-red-800"
-              >
-                <XCircle size={15} /> رفض
-              </button>
-            </>
-          )}
-
-          {/* سبب الرفض */}
-          {payment.status === "rejected" && payment.rejectReason && (
-            <div className="flex items-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-xl text-xs border border-red-200 dark:border-red-800">
-              <MessageSquare size={13} />
-              <span className="max-w-[150px] truncate">{payment.rejectReason}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Modal الوصل — يدعم صورة وPDF */}
+    <>
       <AnimatePresence>
-        {showReceipt && (() => {
-          const url    = payment.receiptUrl || "";
-          const isPdf  = url.toLowerCase().includes(".pdf") ||
-                         url.toLowerCase().includes("application/pdf") ||
-                         url.toLowerCase().includes("%2Fpdf") ||
-                         url.toLowerCase().includes("raw=1");
-          return (
-            <div
-              className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
-              onClick={() => setShowReceipt(false)}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                onClick={(e) => e.stopPropagation()}
-                className="relative max-w-3xl w-full bg-white dark:bg-gray-900 rounded-3xl overflow-hidden shadow-2xl"
-              >
-                {/* رأس الـ Modal */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center gap-3">
-                    <p className="font-bold text-gray-800 dark:text-white">
-                      وصل دفع — {payment.userName}
-                    </p>
-                    {isPdf && (
-                      <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold px-2 py-0.5 rounded-lg border border-red-200 dark:border-red-800">
-                        PDF
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* زر فتح في تبويب جديد — مفيد دائماً */}
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-xl text-xs font-bold hover:bg-primary/20 transition-all"
-                    >
-                      فتح خارجياً ↗
-                    </a>
-                    <button
-                      onClick={() => setShowReceipt(false)}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl"
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* المحتوى */}
-                <div className="p-4">
-                  {isPdf ? (
-                    /* ─── عرض PDF ─── */
-                    <div className="w-full rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
-                      <iframe
-                        src={url}
-                        title="وصل الدفع PDF"
-                        className="w-full"
-                        style={{ height: "70vh", border: "none" }}
-                      />
-                      {/* رسالة احتياطية إذا لم يعمل الـ iframe */}
-                      <div className="p-3 text-center border-t border-gray-200 dark:border-gray-700">
-                        <p className="text-xs text-gray-400 mb-2">
-                          إذا لم يظهر الملف انقر الزر أدناه
-                        </p>
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-hover transition-all"
-                        >
-                          تحميل / فتح الـ PDF ↗
-                        </a>
-                      </div>
-                    </div>
-                  ) : (
-                    /* ─── عرض صورة ─── */
-                    <img
-                      src={url}
-                      alt="وصل الدفع"
-                      className="w-full max-h-[70vh] object-contain rounded-xl"
-                    />
-                  )}
-                </div>
-              </motion.div>
-            </div>
-          );
-        })()}
+        {showReceipt && (
+          <ReceiptModal payment={payment} onClose={() => setShowReceipt(false)} />
+        )}
       </AnimatePresence>
-    </motion.div>
+
+      <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+
+        <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* معلومات الطالب */}
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-black text-lg flex-shrink-0">
+              {payment.userName?.[0] || "؟"}
+            </div>
+            <div className="min-w-0">
+              <p className="font-black text-gray-800 dark:text-white">{payment.userName}</p>
+              <p className="text-sm text-gray-500 truncate">{payment.userEmail}</p>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${colorMap[status.color]} flex items-center gap-1`}>
+                  <StatusIcon size={11} /> {status.label}
+                </span>
+                <span className="text-xs text-gray-400">{payment.amount} د.ج</span>
+                {payment.paymentMethod && (
+                  <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800 font-bold">
+                    {payment.paymentMethod}
+                  </span>
+                )}
+                {payment.level && (
+                  <span className="text-xs text-gray-400">{payment.level}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* أزرار */}
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+            {payment.receiptUrl && (
+              <button onClick={() => setShowReceipt(true)}
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl font-bold hover:bg-blue-100 transition-all text-sm border border-blue-200 dark:border-blue-800">
+                <Eye size={15} /> الوصل
+              </button>
+            )}
+
+            {payment.status === "pending" && (
+              <>
+                <button disabled={updating === payment.id} onClick={() => onApprove(payment.id)}
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-all disabled:opacity-50 text-sm shadow-sm">
+                  {updating === payment.id
+                    ? <Loader2 size={15} className="animate-spin" />
+                    : <CheckCircle size={15} />
+                  }
+                  قبول
+                </button>
+                <button disabled={updating === payment.id} onClick={() => onReject(payment)}
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-bold hover:bg-red-100 transition-all disabled:opacity-50 text-sm border border-red-200 dark:border-red-800">
+                  <XCircle size={15} /> رفض
+                </button>
+              </>
+            )}
+
+            {payment.status === "rejected" && payment.rejectReason && (
+              <div className="flex items-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-xl text-xs border border-red-200 dark:border-red-800">
+                <MessageSquare size={13} />
+                <span className="max-w-[150px] truncate">{payment.rejectReason}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </>
   );
 }
 
@@ -331,19 +309,14 @@ export default function AdminPaymentsPage() {
 
   useEffect(() => { fetchPayments(); }, []);
 
-  // قبول الطلب
   const handleApprove = async (paymentId) => {
     setUpdating(paymentId);
     try {
       const payment = payments.find((p) => p.id === paymentId);
-
-      // تحديث الدفع
       await updateDoc(doc(db, "payments", paymentId), {
         status:     "approved",
         reviewedAt: serverTimestamp(),
       });
-
-      // تفعيل حساب المستخدم + تحديد تاريخ انتهاء الاشتراك
       if (payment?.userId) {
         const subscriptionEnd = getSubscriptionEnd();
         await updateDoc(doc(db, "users", payment.userId), {
@@ -356,7 +329,6 @@ export default function AdminPaymentsPage() {
           updatedAt:           serverTimestamp(),
         });
       }
-
       setPayments((prev) =>
         prev.map((p) => p.id === paymentId ? { ...p, status: "approved" } : p)
       );
@@ -367,7 +339,6 @@ export default function AdminPaymentsPage() {
     }
   };
 
-  // رفض الطلب
   const handleReject = async (reason) => {
     if (!rejectTarget) return;
     setRejecting(true);
@@ -377,15 +348,12 @@ export default function AdminPaymentsPage() {
         rejectReason: reason,
         reviewedAt:   serverTimestamp(),
       });
-
-      // إعادة حالة المستخدم لـ pending
       if (rejectTarget.userId) {
         await updateDoc(doc(db, "users", rejectTarget.userId), {
           paymentStatus: "rejected",
           updatedAt:     serverTimestamp(),
         });
       }
-
       setPayments((prev) =>
         prev.map((p) =>
           p.id === rejectTarget.id ? { ...p, status: "rejected", rejectReason: reason } : p
@@ -412,7 +380,6 @@ export default function AdminPaymentsPage() {
   return (
     <div className="space-y-8" dir="rtl">
 
-      {/* Reject Modal */}
       <AnimatePresence>
         {rejectTarget && (
           <RejectModal
@@ -430,10 +397,8 @@ export default function AdminPaymentsPage() {
           <h1 className="text-3xl font-black text-gray-900 dark:text-white">طلبات التفعيل</h1>
           <p className="text-gray-500 mt-1">مراجعة وإدارة طلبات دفع الطلاب</p>
         </div>
-        <button
-          onClick={fetchPayments}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-primary-hover transition-all text-sm"
-        >
+        <button onClick={fetchPayments}
+          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-bold hover:bg-primary-hover transition-all text-sm">
           <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
           تحديث
         </button>
@@ -442,9 +407,9 @@ export default function AdminPaymentsPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "معلقة",  value: stats.pending,  color: "orange",  icon: Clock },
-          { label: "مقبولة", value: stats.approved, color: "emerald", icon: CheckCircle },
-          { label: "مرفوضة",value: stats.rejected, color: "red",     icon: XCircle },
+          { label: "معلقة",   value: stats.pending,  color: "orange",  icon: Clock        },
+          { label: "مقبولة",  value: stats.approved, color: "emerald", icon: CheckCircle  },
+          { label: "مرفوضة", value: stats.rejected, color: "red",     icon: XCircle      },
         ].map((s, i) => (
           <div key={i} className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm text-center">
             <div className={`w-10 h-10 bg-${s.color}-50 dark:bg-${s.color}-900/20 rounded-xl flex items-center justify-center mx-auto mb-2`}>
@@ -460,19 +425,16 @@ export default function AdminPaymentsPage() {
       <div className="flex gap-2 flex-wrap">
         {[
           { value: "all",      label: `الكل (${payments.length})` },
-          { value: "pending",  label: `معلق (${stats.pending})` },
+          { value: "pending",  label: `معلق (${stats.pending})`   },
           { value: "approved", label: `مقبول (${stats.approved})` },
           { value: "rejected", label: `مرفوض (${stats.rejected})` },
         ].map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setFilterStatus(f.value)}
+          <button key={f.value} onClick={() => setFilterStatus(f.value)}
             className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
               filterStatus === f.value
                 ? "bg-primary text-white shadow-lg shadow-primary/20"
                 : "bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-primary/40"
-            }`}
-          >
+            }`}>
             {f.label}
           </button>
         ))}
