@@ -14,8 +14,8 @@ import { useAuthStore } from "@/store/authStore";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import FlashcardSession from "@/components/FlashcardSession";
+import { useFlashcardProgressStore } from "@/store/useFlashcardProgressStore";
 
-// ─── قاموس المواد حسب level ───────────────────────────────────────────────────
 const SUBJECTS_BY_LEVEL = {
   middle:               ["رياضيات","لغة عربية","فيزياء","علوم طبيعية","فرنسية","إنجليزية","تاريخ","جغرافيا","تربية إسلامية","تربية مدنية"],
   "1sec_science":       ["لغة عربية","فرنسية","إنجليزية","رياضيات","تاريخ","جغرافيا","تربية إسلامية","فيزياء","علوم","إعلام آلي"],
@@ -79,33 +79,23 @@ function getUserSubjects(user, userLevel) {
   return baseSubjects;
 }
 
-// ─── خريطة ID → اسم المادة (مُحدَّثة بالـ IDs الجديدة) ──────────────────────
 const SUBJECT_TITLE_MAP = {
-  // متوسط
   m1:"رياضيات", m2:"لغة عربية", m3:"فيزياء", m4:"علوم طبيعية", m5:"فرنسية",
   m6:"إنجليزية", m7:"تاريخ", m8:"جغرافيا", m9:"تربية إسلامية", m10:"تربية مدنية",
-  // سنة أولى علوم
   sc1:"لغة عربية", sc2:"فرنسية", sc3:"إنجليزية", sc4:"رياضيات", sc5:"تاريخ",
   sc6:"جغرافيا", sc7:"تربية إسلامية", sc8:"فيزياء", sc9:"علوم", sc10:"إعلام آلي",
-  // سنة أولى آداب
   ac1:"لغة عربية", ac2:"فرنسية", ac3:"إنجليزية", ac4:"رياضيات", ac5:"تاريخ",
   ac6:"جغرافيا", ac7:"تربية إسلامية", ac8:"فيزياء", ac9:"علوم", ac10:"إعلام آلي",
-  // علوم تجريبية (سنة 3)
   se1:"لغة عربية", se2:"فرنسية", se3:"إنجليزية", se4:"رياضيات", se5:"تاريخ",
   se6:"جغرافيا", se7:"تربية إسلامية", se8:"فيزياء", se9:"علوم طبيعية", se10:"فلسفة",
-  // رياضيات (سنة 3)
   sm1:"لغة عربية", sm2:"فرنسية", sm3:"إنجليزية", sm4:"رياضيات", sm5:"تاريخ",
   sm6:"جغرافيا", sm7:"تربية إسلامية", sm8:"فيزياء", sm9:"علوم طبيعية", sm10:"فلسفة",
-  // تقني رياضي (سنة 3)
   st1:"لغة عربية", st2:"فرنسية", st3:"إنجليزية", st4:"رياضيات", st5:"تاريخ",
   st6:"جغرافيا", st7:"تربية إسلامية", st8:"فيزياء", st9:"فلسفة",
-  // تسيير واقتصاد (سنة 3)
   ec1:"لغة عربية", ec2:"فرنسية", ec3:"إنجليزية", ec4:"رياضيات", ec5:"تاريخ",
   ec6:"جغرافيا", ec7:"تربية إسلامية", ec8:"محاسبة", ec9:"اقتصاد", ec10:"قانون", ec11:"فلسفة",
-  // آداب وفلسفة (سنة 3)
   ap1:"لغة عربية", ap2:"فرنسية", ap3:"إنجليزية", ap4:"رياضيات", ap5:"فلسفة",
   ap6:"تاريخ", ap7:"جغرافيا", ap8:"تربية إسلامية",
-  // لغات أجنبية (سنة 2 و 3)
   al1:"لغة عربية", al2:"فرنسية", al3:"إنجليزية", al4:"رياضيات",
   al5:"تاريخ", al6:"جغرافيا", al7:"تربية إسلامية", al8:"فلسفة",
 };
@@ -134,13 +124,10 @@ const SEMESTERS = [
 function FileViewer({ urls, title, onClose }) {
   const [current, setCurrent] = useState(0);
   const [zoom,    setZoom]    = useState(1);
-
   const url   = urls[current];
   const total = urls.length;
   const isPdf = url?.toLowerCase().includes(".pdf") || url?.includes("/raw/");
-
   useEffect(() => { setZoom(1); }, [current]);
-
   const openFullPage = () => window.open(url, "_blank");
   const zoomIn  = () => setZoom(z => Math.min(3, parseFloat((z + 0.25).toFixed(2))));
   const zoomOut = () => setZoom(z => Math.max(0.5, parseFloat((z - 0.25).toFixed(2))));
@@ -188,7 +175,6 @@ function FileViewer({ urls, title, onClose }) {
           </a>
         </div>
       </div>
-
       {total > 1 && (
         <div className="flex items-center gap-2 px-3 py-2 bg-gray-900 border-b border-gray-800 overflow-x-auto flex-shrink-0">
           <button onClick={() => setCurrent(i => Math.max(0, i - 1))} disabled={current === 0}
@@ -211,7 +197,6 @@ function FileViewer({ urls, title, onClose }) {
           </button>
         </div>
       )}
-
       <div className="flex-1 overflow-auto">
         {isPdf ? (
           <iframe src={url} className="w-full h-full border-0 min-h-[600px]"
@@ -232,7 +217,6 @@ function FileViewer({ urls, title, onClose }) {
           </div>
         )}
       </div>
-
       {!isPdf && (
         <div className="flex items-center justify-center gap-4 py-2 bg-gray-950 border-t border-gray-800 flex-shrink-0">
           <input type="range" min="50" max="300" value={zoom * 100}
@@ -251,29 +235,14 @@ function ContentItem({ item }) {
   const [viewerUrls,   setViewerUrls]   = useState([]);
   const [viewerTitle,  setViewerTitle]  = useState("");
   const [solutionOpen, setSolutionOpen] = useState(false);
-
-  const mainUrls = item.fileUrls?.length > 0
-    ? item.fileUrls
-    : item.fileUrl ? [item.fileUrl] : [];
-
-  const solUrls = item.solutionUrls?.length > 0
-    ? item.solutionUrls
-    : item.solutionUrl ? [item.solutionUrl] : [];
-
-  const openViewer = (urls, title) => {
-    setViewerUrls(urls);
-    setViewerTitle(title);
-    setViewerOpen(true);
-  };
+  const mainUrls = item.fileUrls?.length > 0 ? item.fileUrls : item.fileUrl ? [item.fileUrl] : [];
+  const solUrls  = item.solutionUrls?.length > 0 ? item.solutionUrls : item.solutionUrl ? [item.solutionUrl] : [];
+  const openViewer = (urls, title) => { setViewerUrls(urls); setViewerTitle(title); setViewerOpen(true); };
 
   return (
     <>
-      {viewerOpen && (
-        <FileViewer urls={viewerUrls} title={viewerTitle} onClose={() => setViewerOpen(false)}/>
-      )}
-      {solutionOpen && (
-        <FileViewer urls={solUrls} title={`حل — ${item.title}`} onClose={() => setSolutionOpen(false)}/>
-      )}
+      {viewerOpen  && <FileViewer urls={viewerUrls} title={viewerTitle} onClose={() => setViewerOpen(false)}/>}
+      {solutionOpen && <FileViewer urls={solUrls} title={`حل — ${item.title}`} onClose={() => setSolutionOpen(false)}/>}
       <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 hover:border-primary/30 hover:shadow-md transition-all">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -283,20 +252,15 @@ function ContentItem({ item }) {
             }
             <div className="min-w-0">
               <p className="font-bold text-gray-800 dark:text-gray-200 text-sm truncate">{item.title}</p>
-              {item.description && (
-                <p className="text-xs text-gray-400 mt-0.5 truncate">{item.description}</p>
-              )}
-              {mainUrls.length > 1 && (
-                <p className="text-xs text-primary font-bold mt-0.5">{mainUrls.length} ملفات</p>
-              )}
+              {item.description && <p className="text-xs text-gray-400 mt-0.5 truncate">{item.description}</p>}
+              {mainUrls.length > 1 && <p className="text-xs text-primary font-bold mt-0.5">{mainUrls.length} ملفات</p>}
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
             {mainUrls.length > 0 && (
               <button onClick={() => openViewer(mainUrls, item.title)}
                 className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all">
-                <Eye size={14}/>
-                {mainUrls.length > 1 ? `عرض (${mainUrls.length})` : "عرض"}
+                <Eye size={14}/>{mainUrls.length > 1 ? `عرض (${mainUrls.length})` : "عرض"}
               </button>
             )}
             {mainUrls.length > 0 && (
@@ -308,8 +272,7 @@ function ContentItem({ item }) {
             {solUrls.length > 0 && (
               <button onClick={() => setSolutionOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all">
-                <CheckCircle2 size={14}/>
-                {solUrls.length > 1 ? `الحل (${solUrls.length})` : "الحل"}
+                <CheckCircle2 size={14}/>{solUrls.length > 1 ? `الحل (${solUrls.length})` : "الحل"}
               </button>
             )}
           </div>
@@ -326,7 +289,6 @@ function SectionAccordion({ section, items, loading }) {
     blue: "bg-blue-500", emerald: "bg-emerald-500",
     green: "bg-green-500", purple: "bg-purple-500", orange: "bg-orange-500",
   };
-
   const handleToggle = () => {
     const opening = !open;
     setOpen(opening);
@@ -335,44 +297,33 @@ function SectionAccordion({ section, items, loading }) {
       if (section.id === "exercise" && window.__reportTaskAction) window.__reportTaskAction("exercise");
     }
   };
-
   return (
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
       <button onClick={handleToggle}
         className="w-full p-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
         <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-xl ${colorMap[section.color]} text-white`}>
-            <Icon size={20} />
-          </div>
+          <div className={`p-2.5 rounded-xl ${colorMap[section.color]} text-white`}><Icon size={20}/></div>
           <div className="text-right">
             <p className="font-bold text-gray-800 dark:text-gray-200">{section.label}</p>
-            <p className="text-xs text-gray-400">
-              {loading ? "جاري التحميل..." : `${items.length} عنصر`}
-            </p>
+            <p className="text-xs text-gray-400">{loading ? "جاري التحميل..." : `${items.length} عنصر`}</p>
           </div>
         </div>
-        <ChevronDown size={18} className={`text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={18} className={`text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}/>
       </button>
-
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
+          <motion.div initial={{ height:0, opacity:0 }} animate={{ height:"auto", opacity:1 }} exit={{ height:0, opacity:0 }}
             className="border-t border-gray-100 dark:border-gray-800">
             <div className="p-4 space-y-3">
               {loading ? (
-                <div className="flex justify-center py-6">
-                  <Loader2 className="animate-spin text-primary" size={28} />
-                </div>
+                <div className="flex justify-center py-6"><Loader2 className="animate-spin text-primary" size={28}/></div>
               ) : items.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-400 text-sm">لا يوجد محتوى متاح حالياً</p>
                   <p className="text-gray-300 text-xs mt-1">سيتم الإضافة قريباً</p>
                 </div>
               ) : (
-                items.map((item) => <ContentItem key={item.id} item={item} />)
+                items.map((item) => <ContentItem key={item.id} item={item}/>)
               )}
             </div>
           </motion.div>
@@ -390,26 +341,30 @@ export default function CourseDetailPage() {
   const autoOpen     = searchParams.get("autoopen");
 
   const user = useAuthStore((state) => state.user);
+  const { getProgress } = useFlashcardProgressStore();
 
   const [activeSemester, setActiveSemester] = useState("s1");
   const [content,  setContent]  = useState({});
   const [loading,  setLoading]  = useState(false);
   const [fetched,  setFetched]  = useState({});
+
+  // ─── state للـ FlashcardSession ───────────────────────────────────────────
   const [flashcardCards,      setFlashcardCards]      = useState(null);
   const [flashcardStartIndex, setFlashcardStartIndex] = useState(0);
+  const [flashcardSessionKey, setFlashcardSessionKey] = useState("");
+  // ✅ isReview: true = جاي من إشعار مراجعة، false = جلسة عادية
+  const [flashcardIsReview,   setFlashcardIsReview]   = useState(false);
 
   const userLevel   = getUserLevel(user);
   const subjectName = getSubjectName(subjectId, userLevel, user);
 
+  // ─── جلب المحتوى ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user || !userLevel || !subjectName) return;
     if (fetched[activeSemester]) return;
-
     const fetchContent = async () => {
       setLoading(true);
       try {
-        console.log("🔍 جلب:", { userLevel, subjectName, activeSemester });
-
         const q = query(
           collection(db, "content"),
           where("level",       "==", userLevel),
@@ -418,11 +373,8 @@ export default function CourseDetailPage() {
           where("isPublished", "==", true),
           orderBy("createdAt", "asc")
         );
-
         const snap = await getDocs(q);
         const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        console.log(`✅ وجدنا ${docs.length} عنصر`);
-
         setContent((prev) => ({
           ...prev,
           [activeSemester]: {
@@ -440,36 +392,39 @@ export default function CourseDetailPage() {
         setLoading(false);
       }
     };
-
     fetchContent();
   }, [activeSemester, userLevel, subjectName]);
 
+  // ─── عند المجيء من إشعار المراجعة: ابحث عن الفصل الصحيح ────────────────
   useEffect(() => {
     if (!reviewCardId || !userLevel || !subjectName) return;
-    const SEMS = ["s1", "s2", "final"];
-    SEMS.forEach(sem => {
-      if (!fetched[sem]) setActiveSemester(sem);
-    });
+    const SEMS = ["s1", "s2", "s3", "final"];
+    SEMS.forEach(sem => { if (!fetched[sem]) setActiveSemester(sem); });
   }, [reviewCardId, userLevel, subjectName]);
 
+  // ─── عند المجيء من إشعار المراجعة: افتح الجلسة على البطاقة الصحيحة ─────
+  // ✅ الإصلاح: نمرر sessionKey و subjectId و subjectName بشكل صحيح
   useEffect(() => {
     if (!autoOpen || !reviewCardId) return;
-    for (const sem of Object.values(content)) {
-      const qaList = sem?.qa || [];
+    for (const [sem, semContent] of Object.entries(content)) {
+      const qaList = semContent?.qa || [];
       if (qaList.length === 0) continue;
       const idx = qaList.findIndex(c => c.id === reviewCardId);
       if (idx !== -1) {
+        const key = `${subjectId}_${sem}`;
+        setFlashcardSessionKey(key);
         setFlashcardStartIndex(idx);
+        setFlashcardIsReview(true);   // ✅ وضع مراجعة — يبدأ من البطاقة الصعبة
         setFlashcardCards(qaList);
         return;
       }
     }
-  }, [content, reviewCardId, autoOpen]);
+  }, [content, reviewCardId, autoOpen, subjectId]);
 
   if (!user) {
     return (
       <div className="h-[60vh] flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary" size={36} />
+        <Loader2 className="animate-spin text-primary" size={36}/>
       </div>
     );
   }
@@ -487,23 +442,33 @@ export default function CourseDetailPage() {
   return (
     <div className="space-y-8" dir="rtl">
 
+      {/* ✅ FlashcardSession مع subjectId و subjectName لحفظ المراجعة صح */}
       {flashcardCards && (
         <FlashcardSession
           cards={flashcardCards}
           startIndex={flashcardStartIndex}
-          onClose={() => { setFlashcardCards(null); setFlashcardStartIndex(0); }}
+          sessionKey={flashcardSessionKey}
+          subjectId={subjectId}
+          subjectName={subjectName}
+          isReview={flashcardIsReview}
+          onClose={() => {
+            setFlashcardCards(null);
+            setFlashcardStartIndex(0);
+            setFlashcardSessionKey("");
+            setFlashcardIsReview(false);
+          }}
         />
       )}
 
       <div className="flex items-center gap-4">
         <Link href="/dashboard/courses">
           <button className="p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-            <ArrowLeft size={20} className="text-gray-600 dark:text-gray-400" />
+            <ArrowLeft size={20} className="text-gray-600 dark:text-gray-400"/>
           </button>
         </Link>
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-            <BookOpen size={24} />
+            <BookOpen size={24}/>
           </div>
           <div>
             <h1 className="text-2xl font-black text-gray-800 dark:text-gray-100">{subjectName}</h1>
@@ -525,7 +490,7 @@ export default function CourseDetailPage() {
         ].map((s, i) => (
           <div key={i} className="bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 text-center shadow-sm">
             <div className={`w-9 h-9 bg-${s.color}-50 dark:bg-${s.color}-900/20 rounded-xl flex items-center justify-center mx-auto mb-2`}>
-              <s.icon className={`text-${s.color}-500`} size={18} />
+              <s.icon className={`text-${s.color}-500`} size={18}/>
             </div>
             <p className="text-xs text-gray-400">{s.label}</p>
             <p className="font-black text-gray-700 dark:text-gray-300 text-lg">{s.count}</p>
@@ -562,7 +527,7 @@ export default function CourseDetailPage() {
                   className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-5 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2.5 rounded-xl bg-orange-500 text-white">
-                      <HelpCircle size={20} />
+                      <HelpCircle size={20}/>
                     </div>
                     <div>
                       <p className="font-bold text-gray-800 dark:text-gray-200">سؤال وجواب</p>
@@ -573,9 +538,19 @@ export default function CourseDetailPage() {
                   </div>
                   <button
                     disabled={loading || qaItems.length === 0}
-                    onClick={() => { setFlashcardStartIndex(0); setFlashcardCards(qaItems); }}
+                    onClick={() => {
+                      // ✅ نبني الـ key ونقرأ التقدم المحفوظ لهذه المادة والفصل تحديداً
+                      const key      = `${subjectId}_${activeSemester}`;
+                      const savedIdx = user?.id ? getProgress(user.id, key) : 0;
+                      const startIdx = savedIdx >= qaItems.length ? 0 : savedIdx;
+
+                      setFlashcardSessionKey(key);
+                      setFlashcardStartIndex(startIdx);
+                      setFlashcardIsReview(false);  // ✅ جلسة عادية
+                      setFlashcardCards(qaItems);
+                    }}
                     className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed text-sm">
-                    <Eye size={16} />
+                    <Eye size={16}/>
                     {qaItems.length === 0 ? "لا توجد أسئلة" : "ابدأ الجلسة"}
                   </button>
                 </div>

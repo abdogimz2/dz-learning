@@ -17,7 +17,7 @@ export const useRepetitionStore = create(
           c => c.id === card.id && c.userId === card.userId
         );
         const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 3);
+        dueDate.setSeconds(dueDate.getSeconds() + 1);
 
         if (existing) {
           // تحديث الموعد إذا كان موجوداً
