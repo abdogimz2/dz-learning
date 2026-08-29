@@ -795,7 +795,7 @@ export default function RegisterPage() {
                             <option value="ألمانية">ألمانية</option>
                             <option value="إسبانية">إسبانية</option>
                             <option value="إيطالية">إيطالية</option>
-                            <option value="فرنسية">فرنسية</option>
+                          
                           </select>
                           {formErrors.thirdLanguage && (
                             <p className={errorStyle}><AlertCircle size={12} />{formErrors.thirdLanguage}</p>

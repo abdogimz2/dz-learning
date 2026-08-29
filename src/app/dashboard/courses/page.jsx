@@ -32,6 +32,7 @@ const ALL_SUBJECTS = {
     { id: "sc8",  title: "فيزياء",        color: "purple", icon: "⚡" },
     { id: "sc9",  title: "علوم",          color: "green",  icon: "🌿" },
     { id: "sc10", title: "إعلام آلي",     color: "gray",   icon: "💻" },
+    { id: "sc11", title: "تكنولوجيا",     color: "cyan",   icon: "⚙️" },
   ],
 
   "1sec_arts": [
@@ -47,79 +48,149 @@ const ALL_SUBJECTS = {
     { id: "ac10", title: "إعلام آلي",     color: "gray",   icon: "💻" },
   ],
 
+  // ═══════════ السنة الثانية ثانوي (جديد بالكامل) ═══════════
+  "2sec_science_exp": [
+    { id: "b2se1",  title: "لغة عربية",     color: "yellow", icon: "📖" },
+    { id: "b2se2",  title: "فرنسية",        color: "red",    icon: "🇫🇷" },
+    { id: "b2se3",  title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "b2se4",  title: "رياضيات",       color: "blue",   icon: "📐" },
+    { id: "b2se5",  title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "b2se6",  title: "جغرافيا",       color: "teal",   icon: "🗺️" },
+    { id: "b2se7",  title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    { id: "b2se8",  title: "فيزياء",        color: "purple", icon: "⚡" },
+    { id: "b2se9",  title: "علوم طبيعية",   color: "green",  icon: "🌿" },
+    { id: "b2se10", title: "إعلام آلي",     color: "gray",   icon: "💻" },
+    { id: "b2se11", title: "فلسفة",         color: "purple", icon: "🧠" },
+  ],
+
+  "2sec_science_math": [
+    { id: "b2sm1",  title: "لغة عربية",     color: "yellow", icon: "📖" },
+    { id: "b2sm2",  title: "فرنسية",        color: "red",    icon: "🇫🇷" },
+    { id: "b2sm3",  title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "b2sm4",  title: "رياضيات",       color: "blue",   icon: "📐" },
+    { id: "b2sm5",  title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "b2sm6",  title: "جغرافيا",       color: "teal",   icon: "🗺️" },
+    { id: "b2sm7",  title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    { id: "b2sm8",  title: "فيزياء",        color: "purple", icon: "⚡" },
+    { id: "b2sm9",  title: "علوم طبيعية",   color: "green",  icon: "🌿" },
+    { id: "b2sm10", title: "إعلام آلي",     color: "gray",   icon: "💻" },
+    { id: "b2sm11", title: "فلسفة",         color: "purple", icon: "🧠" },
+  ],
+
+  "2sec_science_tech": [
+    { id: "b2st1",  title: "لغة عربية",     color: "yellow", icon: "📖" },
+    { id: "b2st2",  title: "فرنسية",        color: "red",    icon: "🇫🇷" },
+    { id: "b2st3",  title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "b2st4",  title: "رياضيات",       color: "blue",   icon: "📐" },
+    { id: "b2st5",  title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "b2st6",  title: "جغرافيا",       color: "teal",   icon: "🗺️" },
+    { id: "b2st7",  title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    { id: "b2st8",  title: "فيزياء",        color: "purple", icon: "⚡" },
+    { id: "b2st9",  title: "إعلام آلي",     color: "gray",   icon: "💻" },
+    { id: "b2st10", title: "فلسفة",         color: "purple", icon: "🧠" },
+    // مادة الهندسة تُضاف ديناميكياً من subSpecialty
+  ],
+
+  "2sec_science_eco": [
+    { id: "b2ec1",  title: "لغة عربية",     color: "yellow", icon: "📖" },
+    { id: "b2ec2",  title: "فرنسية",        color: "red",    icon: "🇫🇷" },
+    { id: "b2ec3",  title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "b2ec4",  title: "رياضيات",       color: "blue",   icon: "📐" },
+    { id: "b2ec5",  title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "b2ec6",  title: "جغرافيا",       color: "teal",   icon: "🗺️" },
+    { id: "b2ec7",  title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    { id: "b2ec8",  title: "محاسبة",        color: "pink",   icon: "🧾" },
+    { id: "b2ec9",  title: "اقتصاد",        color: "cyan",   icon: "📊" },
+    { id: "b2ec10", title: "قانون",         color: "gray",   icon: "⚖️" },
+    { id: "b2ec11", title: "إعلام آلي",     color: "gray",   icon: "💻" },
+    { id: "b2ec12", title: "فلسفة",         color: "purple", icon: "🧠" },
+  ],
+
+  "2sec_arts_philo": [
+    { id: "b2ap1",  title: "لغة عربية",     color: "yellow", icon: "📖" },
+    { id: "b2ap2",  title: "فرنسية",        color: "red",    icon: "🇫🇷" },
+    { id: "b2ap3",  title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "b2ap4",  title: "رياضيات",       color: "blue",   icon: "📐" },
+    { id: "b2ap5",  title: "فلسفة",         color: "purple", icon: "🧠" },
+    { id: "b2ap6",  title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "b2ap7",  title: "جغرافيا",       color: "teal",   icon: "🗺️" },
+    { id: "b2ap8",  title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    { id: "b2ap9",  title: "إعلام آلي",     color: "gray",   icon: "💻" },
+    { id: "b2ap10", title: "علوم طبيعية",   color: "green",  icon: "🌿" },
+  ],
+
+  "2sec_arts_lang": [
+    { id: "b2al1", title: "لغة عربية",     color: "yellow", icon: "📖" },
+    { id: "b2al2", title: "فرنسية",        color: "red",    icon: "🇫🇷" },
+    { id: "b2al3", title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "b2al4", title: "رياضيات",       color: "blue",   icon: "📐" },
+    { id: "b2al5", title: "فلسفة",         color: "purple", icon: "🧠" },
+    { id: "b2al6", title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "b2al7", title: "جغرافيا",       color: "teal",   icon: "🗺️" },
+    { id: "b2al8", title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    // اللغة الثالثة تُضاف ديناميكياً
+  ],
+
+  // ═══════════ السنة الثالثة ثانوي (معدّلة حسب القرار الجديد) ═══════════
   science_exp: [
-    { id: "se1",  title: "لغة عربية",     color: "yellow", icon: "📖" },
-    { id: "se2",  title: "فرنسية",        color: "red",    icon: "🇫🇷" },
-    { id: "se3",  title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
-    { id: "se4",  title: "رياضيات",       color: "blue",   icon: "📐" },
-    { id: "se5",  title: "تاريخ",         color: "orange", icon: "🏛️" },
-    { id: "se6",  title: "جغرافيا",       color: "teal",   icon: "🗺️" },
-    { id: "se7",  title: "تربية إسلامية", color: "emerald",icon: "☪️" },
-    { id: "se8",  title: "فيزياء",        color: "purple", icon: "⚡" },
-    { id: "se9",  title: "علوم طبيعية",   color: "green",  icon: "🌿" },
-    { id: "se10", title: "فلسفة",         color: "purple", icon: "🧠" },
+    { id: "se1", title: "لغة عربية",     color: "yellow", icon: "📖" },
+    { id: "se2", title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "se3", title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    { id: "se4", title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "se5", title: "رياضيات",       color: "blue",   icon: "📐" },
+    { id: "se6", title: "فيزياء",        color: "purple", icon: "⚡" },
+    { id: "se7", title: "علوم طبيعية",   color: "green",  icon: "🌿" },
   ],
 
   science_math: [
-    { id: "sm1",  title: "لغة عربية",     color: "yellow", icon: "📖" },
-    { id: "sm2",  title: "فرنسية",        color: "red",    icon: "🇫🇷" },
-    { id: "sm3",  title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
-    { id: "sm4",  title: "رياضيات",       color: "blue",   icon: "📐" },
-    { id: "sm5",  title: "تاريخ",         color: "orange", icon: "🏛️" },
-    { id: "sm6",  title: "جغرافيا",       color: "teal",   icon: "🗺️" },
-    { id: "sm7",  title: "تربية إسلامية", color: "emerald",icon: "☪️" },
-    { id: "sm8",  title: "فيزياء",        color: "purple", icon: "⚡" },
-    { id: "sm9",  title: "علوم طبيعية",   color: "green",  icon: "🌿" },
-    { id: "sm10", title: "فلسفة",         color: "purple", icon: "🧠" },
+    { id: "sm1", title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "sm2", title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    { id: "sm3", title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "sm4", title: "رياضيات",       color: "blue",   icon: "📐" },
+    { id: "sm5", title: "فيزياء",        color: "purple", icon: "⚡" },
+    { id: "sm6", title: "علوم طبيعية",   color: "green",  icon: "🌿" },
+    { id: "sm7", title: "إعلام آلي",     color: "gray",   icon: "💻" },
   ],
 
   science_tech: [
-    { id: "st1", title: "لغة عربية",      color: "yellow", icon: "📖" },
-    { id: "st2", title: "فرنسية",         color: "red",    icon: "🇫🇷" },
-    { id: "st3", title: "إنجليزية",       color: "blue",   icon: "🇬🇧" },
-    { id: "st4", title: "رياضيات",        color: "blue",   icon: "📐" },
-    { id: "st5", title: "تاريخ",          color: "orange", icon: "🏛️" },
-    { id: "st6", title: "جغرافيا",        color: "teal",   icon: "🗺️" },
-    { id: "st7", title: "تربية إسلامية",  color: "emerald",icon: "☪️" },
-    { id: "st8", title: "فيزياء",         color: "purple", icon: "⚡" },
-    { id: "st9", title: "فلسفة",          color: "purple", icon: "🧠" },
+    { id: "st1", title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "st2", title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    { id: "st3", title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "st4", title: "رياضيات",       color: "blue",   icon: "📐" },
+    { id: "st5", title: "فيزياء",        color: "purple", icon: "⚡" },
+    { id: "st6", title: "إعلام آلي",     color: "gray",   icon: "💻" },
     // مادة الهندسة تُضاف ديناميكياً من subSpecialty
   ],
 
   science_eco: [
-    { id: "ec1",  title: "لغة عربية",     color: "yellow", icon: "📖" },
-    { id: "ec2",  title: "فرنسية",        color: "red",    icon: "🇫🇷" },
-    { id: "ec3",  title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
-    { id: "ec4",  title: "رياضيات",       color: "blue",   icon: "📐" },
-    { id: "ec5",  title: "تاريخ",         color: "orange", icon: "🏛️" },
-    { id: "ec6",  title: "جغرافيا",       color: "teal",   icon: "🗺️" },
-    { id: "ec7",  title: "تربية إسلامية", color: "emerald",icon: "☪️" },
-    { id: "ec8",  title: "محاسبة",        color: "pink",   icon: "🧾" },
-    { id: "ec9",  title: "اقتصاد",        color: "cyan",   icon: "📊" },
-    { id: "ec10", title: "قانون",         color: "gray",   icon: "⚖️" },
-    { id: "ec11", title: "فلسفة",         color: "purple", icon: "🧠" },
+    { id: "ec1", title: "لغة عربية",     color: "yellow", icon: "📖" },
+    { id: "ec2", title: "محاسبة",        color: "pink",   icon: "🧾" },
+    { id: "ec3", title: "اقتصاد",        color: "cyan",   icon: "📊" },
+    { id: "ec4", title: "قانون",         color: "gray",   icon: "⚖️" },
+    { id: "ec5", title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "ec6", title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    { id: "ec7", title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "ec8", title: "جغرافيا",       color: "teal",   icon: "🗺️" },
+    { id: "ec9", title: "رياضيات",       color: "blue",   icon: "📐" },
   ],
 
   arts_philo: [
-    { id: "ap1", title: "لغة عربية",      color: "yellow", icon: "📖" },
-    { id: "ap2", title: "فرنسية",         color: "red",    icon: "🇫🇷" },
-    { id: "ap3", title: "إنجليزية",       color: "blue",   icon: "🇬🇧" },
-    { id: "ap4", title: "رياضيات",        color: "blue",   icon: "📐" },
-    { id: "ap5", title: "فلسفة",          color: "purple", icon: "🧠" },
-    { id: "ap6", title: "تاريخ",          color: "orange", icon: "🏛️" },
-    { id: "ap7", title: "جغرافيا",        color: "teal",   icon: "🗺️" },
-    { id: "ap8", title: "تربية إسلامية",  color: "emerald",icon: "☪️" },
+    { id: "ap1", title: "لغة عربية",     color: "yellow", icon: "📖" },
+    { id: "ap2", title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "ap3", title: "فرنسية",        color: "red",    icon: "🇫🇷" },
+    { id: "ap4", title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    { id: "ap5", title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "ap6", title: "جغرافيا",       color: "teal",   icon: "🗺️" },
+    { id: "ap7", title: "فلسفة",         color: "purple", icon: "🧠" },
   ],
 
   arts_lang: [
-    { id: "al1", title: "لغة عربية",      color: "yellow", icon: "📖" },
-    { id: "al2", title: "فرنسية",         color: "red",    icon: "🇫🇷" },
-    { id: "al3", title: "إنجليزية",       color: "blue",   icon: "🇬🇧" },
-    { id: "al4", title: "رياضيات",        color: "blue",   icon: "📐" },
-    { id: "al5", title: "تاريخ",          color: "orange", icon: "🏛️" },
-    { id: "al6", title: "جغرافيا",        color: "teal",   icon: "🗺️" },
-    { id: "al7", title: "تربية إسلامية",  color: "emerald",icon: "☪️" },
-    { id: "al8", title: "فلسفة",          color: "purple", icon: "🧠" },
+    { id: "al1", title: "لغة عربية",     color: "yellow", icon: "📖" },
+    { id: "al2", title: "إنجليزية",      color: "blue",   icon: "🇬🇧" },
+    { id: "al3", title: "فرنسية",        color: "red",    icon: "🇫🇷" },
+    { id: "al4", title: "تربية إسلامية", color: "emerald",icon: "☪️" },
+    { id: "al5", title: "تاريخ",         color: "orange", icon: "🏛️" },
+    { id: "al6", title: "جغرافيا",       color: "teal",   icon: "🗺️" },
     // اللغة الثالثة تُضاف ديناميكياً
   ],
 };
@@ -128,62 +199,68 @@ export const SUBJECT_TITLE_MAP = Object.values(ALL_SUBJECTS)
   .flat()
   .reduce((acc, s) => { acc[s.id] = s.title; return acc; }, {});
 
-function getUserLevel(user) {
-  if (!user) return null;
-  if (user.level === "middle") return "middle";
-
-  if (user.level === "secondary") {
-    const year      = user.year      || "";
-    const branch    = user.branchType|| "";
-    const specialty = user.specialty || "";
-
-    if (year === "1sec") {
-      return branch === "arts" ? "1sec_arts" : "1sec_science";
+  function getUserLevel(user) {
+    if (!user) return null;
+    if (user.level === "middle") return "middle";
+    if (user.level === "secondary") {
+      const year      = user.year      || "";
+      const branch    = user.branchType|| "";
+      const specialty = user.specialty || "";
+      if (year === "1sec") return branch === "arts" ? "1sec_arts" : "1sec_science";
+      if (year === "2sec") {
+        if (branch === "science_main" || branch === "science") {
+          if (specialty === "tech")           return "2sec_science_tech";
+          if (specialty === "تسيير واقتصاد") return "2sec_science_eco";
+          if (specialty === "رياضيات")        return "2sec_science_math";
+          return "2sec_science_exp";
+        }
+        if (branch === "arts_main" || branch === "arts") {
+          if (specialty === "lang")           return "2sec_arts_lang";
+          return "2sec_arts_philo";
+        }
+      }
+      if (branch === "science_main" || branch === "science") {
+        if (specialty === "tech")           return "science_tech";
+        if (specialty === "تسيير واقتصاد") return "science_eco";
+        if (specialty === "رياضيات")        return "science_math";
+        return "science_exp";
+      }
+      if (branch === "arts_main" || branch === "arts") {
+        if (specialty === "lang")           return "arts_lang";
+        return "arts_philo";
+      }
     }
-
-    if (branch === "science_main") {
-      if (specialty === "tech")           return "science_tech";
-      if (specialty === "تسيير واقتصاد") return "science_eco";
-      if (specialty === "رياضيات")        return "science_math";
-      return "science_exp";
-    }
-
-    if (branch === "arts_main") {
-      if (specialty === "lang")           return "arts_lang";
-      return "arts_philo";
-    }
-  }
-  return null;
-}
-
-function getSubjectsForUser(user) {
-  if (!user) return [];
-
-  const userLevel = getUserLevel(user);
-  if (!userLevel) return [];
-
-  const base = [...(ALL_SUBJECTS[userLevel] || [])];
-
-  if (userLevel === "science_tech" && user.subSpecialty) {
-    base.push({
-      id:    "sub_specialty",
-      title: user.subSpecialty,
-      color: "indigo",
-      icon:  "🔧",
-    });
+    return null;
   }
 
-  if (userLevel === "arts_lang" && user.thirdLanguage) {
-    base.push({
-      id:    "third_lang",
-      title: `لغة ${user.thirdLanguage}`,
-      color: "violet",
-      icon:  "🌐",
-    });
+  function getSubjectsForUser(user) {
+    if (!user) return [];
+  
+    const userLevel = getUserLevel(user);
+    if (!userLevel) return [];
+  
+    const base = [...(ALL_SUBJECTS[userLevel] || [])];
+  
+    if ((userLevel === "science_tech" || userLevel === "2sec_science_tech") && user.subSpecialty) {
+      base.push({
+        id:    "sub_specialty",
+        title: user.subSpecialty,
+        color: "indigo",
+        icon:  "🔧",
+      });
+    }
+  
+    if ((userLevel === "arts_lang" || userLevel === "2sec_arts_lang") && user.thirdLanguage) {
+      base.push({
+        id:    "third_lang",
+        title: `لغة ${user.thirdLanguage}`,
+        color: "violet",
+        icon:  "🌐",
+      });
+    }
+  
+    return base;
   }
-
-  return base;
-}
 
 function SubjectCard({ subject, index }) {
   const colorBg = {

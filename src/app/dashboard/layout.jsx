@@ -12,7 +12,9 @@ import { SimpleThemeToggle }      from "@/components/simple-theme-toggle";
 import { useAuthStore }           from "@/store/authStore";
 import { useTaskTracker }         from "@/hooks/useTaskTracker";
 import { useRepetitionStore }     from "@/store/useRepetitionStore";
-import RepetitionNotification from "@/components/RepetitionNotification";
+import RepetitionNotification     from "@/components/RepetitionNotification";
+import { db }                     from "@/lib/firebase/config";
+import { doc, getDoc }            from "firebase/firestore";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "الرئيسية",       href: "/dashboard" },
@@ -27,18 +29,52 @@ export default function DashboardLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router   = useRouter();
-  const { user, isAuthenticated, logout, loading } = useAuthStore();
+  const { user, isAuthenticated, logout, loading, setUser } = useAuthStore();
   const { getDueCards } = useRepetitionStore();
   useTaskTracker();
 
-  // عدد الأسئلة المستحقة للمراجعة
   const dueCount = user?.id ? getDueCards(user.id).length : 0;
 
+  // ✅ 1. حماية الصفحة
   useEffect(() => {
     if (!loading && !isAuthenticated) { router.replace("/login"); return; }
     if (user && user.status === "pending") { router.replace("/payment"); return; }
     if (user && user.status === "waiting_verification") { router.replace("/waiting-verification"); return; }
   }, [isAuthenticated, user, loading, router]);
+
+  // ✅ 2. تحديث النقاط + التحقق من forcedLogout عند كل دخول للـ dashboard
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const refreshUserData = async () => {
+      try {
+        const userSnap = await getDoc(doc(db, "users", user.id));
+        if (!userSnap.exists()) return;
+
+        const data = userSnap.data();
+
+        // ✅ إذا الأدمن أوقف الحساب — سجّل خروج فوري
+        if (data.forcedLogout === true || data.status === "suspended") {
+          await logout();
+          router.replace("/login");
+          return;
+        }
+
+        // ✅ حدّث النقاط إذا تغيرت في Firestore
+        // هذا يحل مشكلة النقاط القديمة في localStorage
+        const freshPoints = data.points || 0;
+        if (freshPoints !== user.points) {
+          setUser({ ...user, points: freshPoints });
+        }
+
+      } catch (e) {
+        // تجاهل أخطاء الشبكة — لا نسجل خروج المستخدم بسببها
+        console.error("refreshUserData error:", e);
+      }
+    };
+
+    refreshUserData();
+  }, [user?.id]); // يعمل مرة واحدة عند أول تحميل
 
   const handleLogout = async () => { await logout(); router.replace("/login"); };
 
@@ -86,8 +122,8 @@ export default function DashboardLayout({ children }) {
       <aside className="hidden lg:flex flex-col w-72 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 sticky top-0 h-screen">
         <div className="p-6">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <img src="/logo.png" alt="Mindly" className="w-14 h-14 object-contain flex-shrink-0"/>
-            <span className="text-3xl font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Mindly</span>
+            <img src="/logo.png" alt="Darsna" className="w-14 h-14 object-contain flex-shrink-0"/>
+            <span className="text-3xl font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Darsna</span>
           </Link>
         </div>
 
@@ -119,7 +155,7 @@ export default function DashboardLayout({ children }) {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* ─── جرس الإشعارات ─── */}
+            {/* جرس الإشعارات */}
             <div className="relative">
               <button
                 id="bell-btn"
@@ -156,7 +192,7 @@ export default function DashboardLayout({ children }) {
         <main className="p-4 md:p-8 flex-1">{children}</main>
       </div>
 
-      {/* ✅ إشعارات المراجعة المتباعدة */}
+      {/* إشعارات المراجعة المتباعدة */}
       <RepetitionNotification/>
 
       {/* Mobile Sidebar */}

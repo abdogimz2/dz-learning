@@ -22,36 +22,56 @@ function getUserLevel(user) {
     const branch    = user.branchType|| "";
     const specialty = user.specialty || "";
     if (year === "1sec") return branch === "arts" ? "1sec_arts" : "1sec_science";
-    // السنة الثانية والثالثة — نفس المنطق (courses-page-v2 لا تفرّق بينهما)
-    if (branch === "science_main") {
+    if (year === "2sec") {
+      if (branch === "science_main" || branch === "science") {
+        if (specialty === "tech")           return "2sec_science_tech";
+        if (specialty === "تسيير واقتصاد") return "2sec_science_eco";
+        if (specialty === "رياضيات")        return "2sec_science_math";
+        return "2sec_science_exp";
+      }
+      if (branch === "arts_main" || branch === "arts") {
+        if (specialty === "lang")           return "2sec_arts_lang";
+        return "2sec_arts_philo";
+      }
+    }
+    if (branch === "science_main" || branch === "science") {
       if (specialty === "tech")           return "science_tech";
       if (specialty === "تسيير واقتصاد") return "science_eco";
       if (specialty === "رياضيات")        return "science_math";
       return "science_exp";
     }
-    if (branch === "arts_main") return specialty === "lang" ? "arts_lang" : "arts_philo";
+    if (branch === "arts_main" || branch === "arts") {
+      if (specialty === "lang")           return "arts_lang";
+      return "arts_philo";
+    }
   }
   return null;
 }
 
 // عدد المواد — مطابق تماماً لـ ALL_SUBJECTS في courses-page-v2
 const SUBJECTS_COUNT = {
-  middle:        10,
-  "1sec_science":10,
-  "1sec_arts":   10,
-  science_exp:   10, // +1 فلسفة
-  science_math:  10, // +1 فلسفة
-  science_tech:   9, // +1 فلسفة
-  science_eco:   11, // +1 فلسفة
-  arts_philo:     8,
-  arts_lang:      8, // +1 فلسفة
+  middle:            10,
+  "1sec_science":    11,
+  "1sec_arts":       10,
+  "2sec_science_exp":11,
+  "2sec_science_math":11,
+  "2sec_science_tech":10, // +1 هندسة
+  "2sec_science_eco":12,
+  "2sec_arts_philo": 10,
+  "2sec_arts_lang":   8, // +1 لغة ثالثة
+  science_exp:        7,
+  science_math:        7,
+  science_tech:        6, // +1 هندسة
+  science_eco:         9,
+  arts_philo:          7,
+  arts_lang:           6, // +1 لغة ثالثة
 };
 function getSubjectsCount(user) {
   const level = getUserLevel(user);
   if (!level) return 0;
   let count = SUBJECTS_COUNT[level] || 0;
-  if (level === "science_tech" && user?.subSpecialty) count += 1;
-  if (level === "arts_lang"    && user?.thirdLanguage) count += 1;
+  if ((level === "science_tech" || level === "2sec_science_tech") && user?.subSpecialty) count += 1;
+  if ((level === "arts_lang" || level === "2sec_arts_lang") && user?.thirdLanguage) count += 1;
   return count;
 }
 

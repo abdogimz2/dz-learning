@@ -6,7 +6,6 @@ import {
   Youtube,
   Mail,
   MapPin,
-  School,
 } from "lucide-react";
 
 export default function Footer() {
@@ -19,12 +18,12 @@ export default function Footer() {
           {/* Column 1 - About & Logo */}
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <div className="bg-primary p-2 rounded-lg">
-                <School className="h-8 w-8 text-white" />
+              <div className="bg-primary p-1.5 rounded-lg">
+                <img src="/logo.png" alt="Darsna" className="h-8 w-8 object-contain rounded-md" />
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-white">
-                  منصة مايندلي التعليمية
+                  منصة درسنا التعليمية
                 </h3>
                 <p className="text-secondary text-sm mt-1">
                   معا للتحقيق التطور التعليمي
@@ -209,7 +208,7 @@ export default function Footer() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-center md:text-right">
               <p className="text-gray-400">
-                © {currentYear} المنصة التعليمية الجزائرية. جميع الحقوق محفوظة.
+                © {currentYear} منصة درسنا التعليمية. جميع الحقوق محفوظة.
               </p>
               <p className="text-sm text-gray-600 mt-1">
                 ⚡ تم التطوير مع الحب للجزائر

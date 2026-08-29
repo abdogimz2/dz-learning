@@ -80,9 +80,9 @@ export default function AdminLayout({ children }) {
 
         {/* Logo */}
         <div className="flex items-center gap-2 px-6 py-6 border-b border-gray-100 dark:border-gray-800">
-          <img src="/logo.png" alt="Mindly" className="w-10 h-10 object-contain flex-shrink-0"/>
+          <img src="/logo.png" alt="Darsna" className="w-10 h-10 object-contain flex-shrink-0"/>
           <div>
-            <p className="font-black text-gray-800 dark:text-white text-base">Mindly</p>
+            <p className="font-black text-gray-800 dark:text-white text-base">Darsna</p>
             <p className="text-xs text-gray-400">لوحة إدارة المنصة</p>
           </div>
         </div>
@@ -134,7 +134,7 @@ export default function AdminLayout({ children }) {
         {/* Top bar */}
         <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-8 justify-between sticky top-0 z-10 backdrop-blur-md">
           <p className="text-sm font-medium text-gray-500">
-            نظام إدارة Mindly
+            نظام إدارة Darsna
           </p>
           {/* زر تسجيل خروج سريع في الهيدر */}
           <button

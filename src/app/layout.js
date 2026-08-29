@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Mindly",
+  title: "Darsna",
   description: "منصة تعليمية جزائرية",
 };
 

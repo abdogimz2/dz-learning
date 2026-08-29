@@ -25,7 +25,8 @@ function getUserLevel(user) {
         return "2sec_science_exp";
       }
       if (branch === "arts_main" || branch === "arts") {
-        return specialty === "lang" ? "2sec_arts_lang" : "2sec_arts_philo";
+        if (specialty === "lang")           return "2sec_arts_lang";
+        return "2sec_arts_philo";
       }
     }
     if (branch === "science_main" || branch === "science") {
@@ -35,7 +36,8 @@ function getUserLevel(user) {
       return "science_exp";
     }
     if (branch === "arts_main" || branch === "arts") {
-      return specialty === "lang" ? "arts_lang" : "arts_philo";
+      if (specialty === "lang")           return "arts_lang";
+      return "arts_philo";
     }
   }
   return null;

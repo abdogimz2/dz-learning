@@ -23,10 +23,12 @@ const PAYMENT_ICONS = [
   { value: "wallet", label: "محفظة إلكترونية",icon: Wallet       },
 ];
 
-const LEVELS = [
-  { value: "middle",    label: "التعليم المتوسط", price: 4000 },
-  { value: "secondary", label: "التعليم الثانوي", price: 5000 },
-  { value: "all",       label: "جميع المستويات",  price: null },
+// ✅ الأقسام السعرية الأربعة الجديدة — مفاتيحها مطابقة لقيم user.level / user.year
+const PRICE_TIERS = [
+  { key: "middle", label: "التعليم المتوسط",       default: 4000 },
+  { key: "1sec",   label: "السنة الأولى ثانوي",    default: 5000 },
+  { key: "2sec",   label: "السنة الثانية ثانوي",   default: 5000 },
+  { key: "3sec",   label: "السنة الثالثة ثانوي",   default: 5000 },
 ];
 
 function Toast({ toast }) {
@@ -53,6 +55,10 @@ function Toast({ toast }) {
 function PaymentMethodModal({ editItem, onClose, onSave, saving }) {
   const isEdit = !!editItem?.id;
 
+  // ✅ عند تعديل طريقة قديمة لا تملك الحقول الجديدة (1sec/2sec/3sec)،
+  // نملأها تلقائياً بقيمة "secondary" القديمة كنقطة بداية فقط — لا يُحفظ شيء قبل الضغط على "حفظ"
+  const legacySecondary = editItem?.prices?.secondary;
+
   const [form, setForm] = useState({
     name:        editItem?.name        || "",
     description: editItem?.description || "",
@@ -63,16 +69,27 @@ function PaymentMethodModal({ editItem, onClose, onSave, saving }) {
     extraInfo:   editItem?.extraInfo   || "",
     isActive:    editItem?.isActive    ?? true,
     prices: {
-      middle:    editItem?.prices?.middle    ?? 4000,
-      secondary: editItem?.prices?.secondary ?? 5000,
+      middle: editItem?.prices?.middle ?? 4000,
+      "1sec": editItem?.prices?.["1sec"] ?? legacySecondary ?? 5000,
+      "2sec": editItem?.prices?.["2sec"] ?? legacySecondary ?? 5000,
+      "3sec": editItem?.prices?.["3sec"] ?? legacySecondary ?? 5000,
     },
   });
 
   const set = (key, val) => setForm(p => ({ ...p, [key]: val }));
-  const setPrice = (level, val) => setForm(p => ({
+  const setPrice = (tierKey, val) => setForm(p => ({
     ...p,
-    prices: { ...p.prices, [level]: Number(val) || 0 },
+    prices: { ...p.prices, [tierKey]: Number(val) || 0 },
   }));
+
+  // نسخ سعر السنة الأولى إلى باقي سنوات الثانوي بضغطة واحدة (اختياري، يسهّل الإدخال المتماثل)
+  const applyToAllSecondary = () => {
+    const base = form.prices["1sec"];
+    setForm(p => ({
+      ...p,
+      prices: { ...p.prices, "2sec": base, "3sec": base },
+    }));
+  };
 
   const IconComp = PAYMENT_ICONS.find(i => i.value === form.iconType)?.icon || Wallet;
 
@@ -208,33 +225,51 @@ function PaymentMethodModal({ editItem, onClose, onSave, saving }) {
             </div>
           </div>
 
-          {/* الأسعار */}
+          {/* ✅ الأسعار — 4 أقسام منفصلة بدل قسمين */}
           <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-4 space-y-3">
-            <p className="text-sm font-black text-blue-700 dark:text-blue-400">
-              💰 الأسعار حسب المستوى (بالدينار الجزائري)
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">
-                  التعليم المتوسط (د.ج)
-                </label>
-                <input
-                  type="number"
-                  value={form.prices.middle}
-                  onChange={e => setPrice("middle", e.target.value)}
-                  className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-sm font-bold text-center text-gray-800 dark:text-gray-200"
-                />
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-black text-blue-700 dark:text-blue-400">
+                💰 الأسعار حسب المستوى (بالدينار الجزائري)
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">
+                {PRICE_TIERS[0].label} (د.ج)
+              </label>
+              <input
+                type="number"
+                value={form.prices.middle}
+                onChange={e => setPrice("middle", e.target.value)}
+                className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-sm font-bold text-center text-gray-800 dark:text-gray-200"
+              />
+            </div>
+
+            <div className="border-t border-blue-100 dark:border-blue-900/30 pt-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-black text-gray-500">أسعار الطور الثانوي — كل سنة على حدة</p>
+                <button
+                  type="button"
+                  onClick={applyToAllSecondary}
+                  className="text-[11px] font-bold text-primary hover:underline"
+                >
+                  نسخ سعر السنة 1 للكل
+                </button>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">
-                  التعليم الثانوي (د.ج)
-                </label>
-                <input
-                  type="number"
-                  value={form.prices.secondary}
-                  onChange={e => setPrice("secondary", e.target.value)}
-                  className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-sm font-bold text-center text-gray-800 dark:text-gray-200"
-                />
+              <div className="grid grid-cols-3 gap-3">
+                {PRICE_TIERS.slice(1).map(tier => (
+                  <div key={tier.key}>
+                    <label className="block text-[11px] font-bold text-gray-500 mb-1 text-center">
+                      {tier.label.replace("ثانوي", "")}
+                    </label>
+                    <input
+                      type="number"
+                      value={form.prices[tier.key]}
+                      onChange={e => setPrice(tier.key, e.target.value)}
+                      className="w-full px-2 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-sm font-bold text-center text-gray-800 dark:text-gray-200"
+                    />
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -286,6 +321,17 @@ function PaymentMethodModal({ editItem, onClose, onSave, saving }) {
 // ─── بطاقة طريقة الدفع ───────────────────────────────────────────────────────
 function PaymentMethodCard({ method, onEdit, onDelete, onToggle, deleting, toggling }) {
   const IconComp = PAYMENT_ICONS.find(i => i.value === method.iconType)?.icon || Wallet;
+
+  // ✅ دعم البيانات القديمة: إذا كانت الطريقة لم تُعدَّل بعد وما زال عندها فقط prices.secondary القديم،
+  // نعرض نفس القيمة القديمة في الثلاث سنوات حتى يعدّلها الأدمن
+  const legacySecondary = method.prices?.secondary;
+  const displayPrices = {
+    middle: method.prices?.middle,
+    "1sec": method.prices?.["1sec"] ?? legacySecondary,
+    "2sec": method.prices?.["2sec"] ?? legacySecondary,
+    "3sec": method.prices?.["3sec"] ?? legacySecondary,
+  };
+  const isLegacyOnly = legacySecondary != null && method.prices?.["1sec"] == null;
 
   return (
     <motion.div
@@ -393,21 +439,43 @@ function PaymentMethodCard({ method, onEdit, onDelete, onToggle, deleting, toggl
         </div>
       )}
 
-      {/* الأسعار */}
+      {/* ✅ الأسعار — 4 مربعات بدل مربعين */}
       {method.prices && (
-        <div className="px-5 pb-5">
-          <div className="grid grid-cols-2 gap-3">
+        <div className="px-5 pb-5 space-y-2">
+          {isLegacyOnly && (
+            <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2">
+              <AlertCircle size={13} className="text-amber-500 flex-shrink-0" />
+              <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                لم تُحدَّث بعد لأسعار السنوات المنفصلة — نفس السعر القديم مطبّق على الثلاث سنوات
+              </p>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-2">
             <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 text-center">
               <p className="text-xs text-gray-500 mb-1">التعليم المتوسط</p>
               <p className="font-black text-primary text-lg">
-                {method.prices.middle?.toLocaleString("ar") || "—"}
+                {displayPrices.middle?.toLocaleString("ar") ?? "—"}
               </p>
               <p className="text-xs text-gray-400">د.ج</p>
             </div>
             <div className="bg-secondary/5 border border-secondary/10 rounded-xl p-3 text-center">
-              <p className="text-xs text-gray-500 mb-1">التعليم الثانوي</p>
+              <p className="text-xs text-gray-500 mb-1">سنة 1 ثانوي</p>
               <p className="font-black text-secondary text-lg">
-                {method.prices.secondary?.toLocaleString("ar") || "—"}
+                {displayPrices["1sec"]?.toLocaleString("ar") ?? "—"}
+              </p>
+              <p className="text-xs text-gray-400">د.ج</p>
+            </div>
+            <div className="bg-secondary/5 border border-secondary/10 rounded-xl p-3 text-center">
+              <p className="text-xs text-gray-500 mb-1">سنة 2 ثانوي</p>
+              <p className="font-black text-secondary text-lg">
+                {displayPrices["2sec"]?.toLocaleString("ar") ?? "—"}
+              </p>
+              <p className="text-xs text-gray-400">د.ج</p>
+            </div>
+            <div className="bg-secondary/5 border border-secondary/10 rounded-xl p-3 text-center">
+              <p className="text-xs text-gray-500 mb-1">سنة 3 ثانوي</p>
+              <p className="font-black text-secondary text-lg">
+                {displayPrices["3sec"]?.toLocaleString("ar") ?? "—"}
               </p>
               <p className="text-xs text-gray-400">د.ج</p>
             </div>
@@ -465,9 +533,12 @@ export default function PaymentMethodsPage() {
         bankName:      form.bankName.trim(),
         extraInfo:     form.extraInfo.trim(),
         isActive:      form.isActive,
+        // ✅ نحفظ الأسعار الأربعة الجديدة. لا حاجة للإبقاء على حقل secondary القديم بعد الحفظ.
         prices: {
-          middle:    form.prices.middle,
-          secondary: form.prices.secondary,
+          middle: form.prices.middle,
+          "1sec": form.prices["1sec"],
+          "2sec": form.prices["2sec"],
+          "3sec": form.prices["3sec"],
         },
         updatedAt: serverTimestamp(),
       };
@@ -593,7 +664,7 @@ export default function PaymentMethodsPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-black text-gray-900 dark:text-white">طرق الدفع</h1>
-          <p className="text-gray-500 mt-1">إدارة طرق الدفع وأسعار الاشتراك</p>
+          <p className="text-gray-500 mt-1">إدارة طرق الدفع وأسعار الاشتراك لكل سنة دراسية</p>
         </div>
         <button
           onClick={openAdd}
@@ -626,7 +697,7 @@ export default function PaymentMethodsPage() {
         <div>
           <p className="text-sm font-bold text-blue-700 dark:text-blue-400">ملاحظة مهمة</p>
           <p className="text-xs text-blue-600 dark:text-blue-300 mt-1 leading-relaxed">
-            طرق الدفع المفعلة تظهر للطلاب في صفحة الدفع. تأكد من صحة أرقام الحسابات قبل التفعيل. يمكنك تعطيل أي طريقة مؤقتاً دون حذفها.
+            طرق الدفع المفعلة تظهر للطلاب في صفحة الدفع. كل طريقة دفع لها الآن سعر مستقل لكل سنة من سنوات الطور الثانوي، بالإضافة لسعر الطور المتوسط. تأكد من صحة أرقام الحسابات قبل التفعيل.
           </p>
         </div>
       </div>

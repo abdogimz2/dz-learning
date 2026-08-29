@@ -31,6 +31,34 @@ const ICON_MAP = {
   wallet: Wallet,
 };
 
+// ✅ يحدد "مفتاح السعر" المناسب لهذا الطالب:
+// middle للطور المتوسط، أو 1sec/2sec/3sec حسب سنته في الثانوي
+function getPriceTierKey(user) {
+  if (user?.level === "middle") return "middle";
+  return user?.year || "3sec"; // احتياط إذا كانت السنة غير محددة لأي سبب
+}
+
+// ✅ يحسب مبلغ طريقة دفع معينة لطالب معين، مع دعم البيانات القديمة
+// (طرق الدفع التي لم تُحدَّث بعد للأسعار الأربعة المنفصلة تستمر بنفس سعرها القديم لكل السنوات)
+function getMethodAmount(method, user) {
+  const tierKey = getPriceTierKey(user);
+  const prices  = method?.prices;
+
+  if (!prices) {
+    return tierKey === "middle" ? 4000 : 5000;
+  }
+
+  if (tierKey === "middle") {
+    return prices.middle ?? 4000;
+  }
+
+  // طالب ثانوي: أولاً نحاول السعر الخاص بسنته، ثم نرجع للسعر الثانوي القديم الموحّد إن وُجد
+  if (prices[tierKey] !== undefined && prices[tierKey] !== null) {
+    return prices[tierKey];
+  }
+  return prices.secondary ?? 5000;
+}
+
 export default function PaymentPage() {
   const [file,        setFile]        = useState(null);
   const [filePreview, setFilePreview] = useState(null);
@@ -133,14 +161,12 @@ export default function PaymentPage() {
     finally  { setCheckingVerification(false); }
   };
 
-  // ─── حساب المبلغ حسب المستوى والطريقة المختارة ───────────────────────────
+  // ✅ حساب المبلغ حسب السنة الدراسية الدقيقة (وليس فقط "متوسط/ثانوي") والطريقة المختارة
   const getAmount = () => {
-    if (!selectedMethod?.prices) {
+    if (!selectedMethod) {
       return user?.level === "middle" ? "4000" : "5000";
     }
-    return user?.level === "middle"
-      ? String(selectedMethod.prices.middle    ?? 4000)
-      : String(selectedMethod.prices.secondary ?? 5000);
+    return String(getMethodAmount(selectedMethod, user));
   };
 
   const levelLabel  = user?.level === "middle" ? "التعليم المتوسط" : "التعليم الثانوي";
@@ -342,9 +368,7 @@ export default function PaymentPage() {
                       const IconComp  = ICON_MAP[method.iconType] || Wallet;
                       const isSelected = selectedMethod?.id === method.id;
                       const isExpanded = expandedMethod === method.id;
-                      const amount     = user?.level === "middle"
-                        ? (method.prices?.middle    ?? 4000)
-                        : (method.prices?.secondary ?? 5000);
+                      const amount     = getMethodAmount(method, user);
 
                       return (
                         <motion.div key={method.id} layout

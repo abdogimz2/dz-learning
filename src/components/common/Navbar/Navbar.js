@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { School, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { SimpleThemeToggle } from "@/components/simple-theme-toggle";
 
 export default function Navbar() {
@@ -21,9 +21,9 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 md:h-18">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
-            <School className="h-7 w-7 text-primary" />
+            <img src="/logo.png" alt="Darsna" className="h-9 w-9 md:h-10 md:w-10 object-contain rounded-lg" />
             <span className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-              منصة مايندلي التعليمية 
+              منصة درسنا التعليمية
             </span>
           </Link>
 
@@ -85,9 +85,9 @@ export default function Navbar() {
           {/* Header */}
           <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-800">
             <div className="flex items-center gap-2.5">
-              <School className="h-7 w-7 text-primary" />
+              <img src="/logo.png" alt="Darsna" className="h-8 w-8 object-contain rounded-lg" />
               <span className="text-lg font-bold text-gray-900 dark:text-white">
-                المنصة
+                درسنا
               </span>
             </div>
             <button
