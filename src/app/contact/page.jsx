@@ -65,8 +65,8 @@ export default function ContactPage() {
               </p>
               <div className="space-y-4">
                 {[
-                  { icon: Mail,   title: "البريد الإلكتروني", value: "contact@mindly.dz",        href: "mailto:contact@mindly.dz" },
-                  { icon: Mail,   title: "البريد الإلكتروني (دعم)", value: "support@mindly.dz",  href: "mailto:support@mindly.dz" },
+                  { icon: Mail,   title: "البريد الإلكتروني", value: "Darsnadz1@gmail.com",        href: "mailto:Darsnadz1@gmail.com" },
+                  { icon: Mail,   title: "البريد الإلكتروني (دعم)", value: "Darsnadz2@gmail.com",  href: "mailto:Darsnadz2@gmail.com" },
                   { icon: MapPin, title: "العنوان",           value: "الجزائر العاصمة",          href: null                       },
                   { icon: Clock,  title: "ساعات العمل",       value: "الأحد – الخميس، 8ص – 6م", href: null                       },
                 ].map((item, i) => (

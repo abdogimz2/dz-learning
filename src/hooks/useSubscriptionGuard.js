@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { auth } from "@/lib/firebase/config";
 import { deleteUser } from "firebase/auth";
-import { doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { doc, deleteDoc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 
 export function useSubscriptionGuard() {
@@ -21,10 +21,19 @@ export function useSubscriptionGuard() {
 
     const checkSubscription = async () => {
       try {
-        // ─── تحقق من subscriptionEnd ─────────────────────────────────────
-        if (!user.subscriptionEnd) { setChecking(false); return; }
+        // ✅ نجيب subscriptionEnd من Firestore مباشرة بدل الاعتماد على الكاش المحلي
+        // (user.subscriptionEnd في authStore ممكن يكون قديم أو فارغ حتى لو محدّث فعلاً في القاعدة)
+        let subscriptionEnd = user.subscriptionEnd;
+        if (!subscriptionEnd) {
+          const snap = await getDoc(doc(db, "users", user.id));
+          if (!snap.exists()) { setChecking(false); return; }
+          subscriptionEnd = snap.data().subscriptionEnd;
+        }
 
-        const endDate = new Date(user.subscriptionEnd);
+        // ─── تحقق من subscriptionEnd ─────────────────────────────────────
+        if (!subscriptionEnd) { setChecking(false); return; }
+
+        const endDate = new Date(subscriptionEnd);
         const now     = new Date();
 
         if (now <= endDate) {

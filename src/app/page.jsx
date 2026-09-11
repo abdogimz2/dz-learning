@@ -34,7 +34,7 @@ export default function Home() {
               <span className="inline-block mr-3">🎓</span>
               <TypeAnimation
                 sequence={[
-                  "منصة مايندلي التعليمية",
+                  "منصة درسنا التعليمية",
                   1200,
                   "بوابتك للتميز الدراسي",
                   1200,

@@ -2,7 +2,7 @@
 "use client";
 
 import { useParams, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, ChevronDown, ArrowLeft, Award,
@@ -241,6 +241,7 @@ function ContentItem({ item }) {
 
 function SectionAccordion({ section, items, loading }) {
   const [open, setOpen] = useState(false);
+  const reportedRef = useRef(false); // يمنع تكرار تسجيل نفس الفتحة أكثر من مرة
   const Icon = section.icon;
   const colorMap = {
     blue: "bg-blue-500", emerald: "bg-emerald-500",
@@ -249,11 +250,18 @@ function SectionAccordion({ section, items, loading }) {
   const handleToggle = () => {
     const opening = !open;
     setOpen(opening);
-    if (opening && items.length > 0) {
+    if (!opening) reportedRef.current = false; // إعادة الضبط عند الإغلاق للسماح بتسجيل صحيح عند إعادة الفتح
+  };
+
+  // ✅ نسجّل "فتح الدرس/التمرين" بمجرد توفر العناصر فعلياً وليس فقط لحظة الضغط،
+  // لأن المحتوى يُجلب من Firestore بشكل غير متزامن وقد لا يكون جاهزاً عند الضغط مباشرة
+  useEffect(() => {
+    if (open && items.length > 0 && !reportedRef.current) {
+      reportedRef.current = true;
       if (section.id === "lesson"   && window.__reportTaskAction) window.__reportTaskAction("lesson");
       if (section.id === "exercise" && window.__reportTaskAction) window.__reportTaskAction("exercise");
     }
-  };
+  }, [open, items.length, section.id]);
   return (
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
       <button onClick={handleToggle}
@@ -298,7 +306,7 @@ export default function CourseDetailPage() {
   const autoOpen     = searchParams.get("autoopen");
 
   const user = useAuthStore((state) => state.user);
-  const { getProgress } = useFlashcardProgressStore();
+  // ملاحظة: نستعمل useFlashcardProgressStore.getState().loadProgress(...) مباشرة عند بدء الجلسة (أسفل)
 
   const [activeSemester, setActiveSemester] = useState("s1");
   const [content,  setContent]  = useState({});
@@ -495,10 +503,12 @@ export default function CourseDetailPage() {
                   </div>
                   <button
                     disabled={loading || qaItems.length === 0}
-                    onClick={() => {
-                      // ✅ نبني الـ key ونقرأ التقدم المحفوظ لهذه المادة والفصل تحديداً
+                    onClick={async () => {
+                      // ✅ نجيب التقدم المحفوظ من Firestore (مربوط بالحساب) قبل فتح الجلسة
                       const key      = `${subjectId}_${activeSemester}`;
-                      const savedIdx = user?.id ? getProgress(user.id, key) : 0;
+                      const savedIdx = user?.id
+                        ? await useFlashcardProgressStore.getState().loadProgress(user.id, key)
+                        : 0;
                       const startIdx = savedIdx >= qaItems.length ? 0 : savedIdx;
 
                       setFlashcardSessionKey(key);

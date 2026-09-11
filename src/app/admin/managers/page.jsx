@@ -8,12 +8,13 @@ import {
   CheckCircle, AlertCircle, X, Eye, EyeOff, UserCog,
   Mail, Lock, Crown,
 } from "lucide-react";
-import { db, auth } from "@/lib/firebase/config";
+import { initializeApp, deleteApp } from "firebase/app";
+import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { db, firebaseConfig } from "@/lib/firebase/config";
 import {
   collection, getDocs, doc, updateDoc, query,
   where, serverTimestamp, setDoc,
 } from "firebase/firestore";
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useAuthStore } from "@/store/authStore";
 
 const SUB_ADMIN_PERMISSIONS = [
@@ -92,10 +93,18 @@ export default function AdminManagersPage() {
       showToast("error", "كلمة المرور يجب أن تكون 6 أحرف على الأقل"); return;
     }
     setSaving(true);
+
+    // ✅ نستعمل تطبيق Firebase ثانوي مؤقت هنا فقط لإنشاء الحساب (createUserWithEmailAndPassword)،
+    // لأن استعمال الـ auth الرئيسي يبدّل تلقائياً جلستك الحالية إلى الحساب الجديد المُنشأ —
+    // وهذا يخلّيك تفقد صلاحياتك كأدمن رئيسي فوراً بعد الضغط على "إضافة".
+    const secondaryApp  = initializeApp(firebaseConfig, `secondary-${Date.now()}`);
+    const secondaryAuth = getAuth(secondaryApp);
+
     try {
-      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      const cred = await createUserWithEmailAndPassword(secondaryAuth, email.trim(), password);
       const uid  = cred.user.uid;
 
+      // ⚠️ setDoc هنا يستعمل db الرئيسي (المرتبط بجلستك الحقيقية كأدمن)، وليس secondaryAuth
       await setDoc(doc(db, "users", uid), {
         name:        name.trim(),
         surname:     "",
@@ -121,7 +130,12 @@ export default function AdminManagersPage() {
         e.message || "حدث خطأ";
       showToast("error", msg);
     }
-    finally { setSaving(false); }
+    finally {
+      // ننظّف التطبيق الثانوي دائماً — جلستك الأصلية في auth الرئيسي تبقى سليمة طول الوقت
+      try { await signOut(secondaryAuth); } catch {}
+      try { await deleteApp(secondaryApp); } catch {}
+      setSaving(false);
+    }
   };
 
   // ─── إزالة صلاحيات ────────────────────────────────────────────────────────

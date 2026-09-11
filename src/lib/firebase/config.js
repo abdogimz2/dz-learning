@@ -13,6 +13,10 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
+// ✅ نصدّرها باش نقدر نستعملها لإنشاء تطبيق Firebase ثانوي مؤقت
+// (مستعمل في admin/managers لإنشاء حسابات أدمن بدون تبديل جلسة الأدمن الحالي)
+export { firebaseConfig };
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 

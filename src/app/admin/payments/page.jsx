@@ -29,12 +29,10 @@ function getSubscriptionEnd() {
   return new Date(year, 5, 30, 23, 59, 59);
 }
 
-// ─── تحويل رابط Cloudinary PDF إلى رابط قابل للعرض ──────────────────────────
+// ─── رابط Cloudinary PDF يشتغل الآن مباشرة بعد تفعيل "PDF and ZIP files delivery" ───
+// (سابقاً كان الكود يحوّل الرابط إلى /raw/upload/ لكن هذا كان يكسره تماماً،
+//  لأن الملف مرفوع أصلاً كـ resource_type=image وليس raw)
 function getPdfViewUrl(rawUrl) {
-  if (!rawUrl) return rawUrl;
-  if (rawUrl.includes("/image/upload/")) {
-    return rawUrl.replace("/image/upload/", "/raw/upload/");
-  }
   return rawUrl;
 }
 
@@ -124,10 +122,8 @@ function ReceiptModal({ payment, onClose }) {
   const isPdf  = isPdfUrl(url);
   const pdfUrl = isPdf ? getPdfViewUrl(url) : url;
 
-  // رابط Google Docs Viewer للـ PDFs القديمة التي رُفعت على /image/upload/
-  const viewerUrl = url.includes("/image/upload/") && isPdf
-    ? `https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true`
-    : pdfUrl;
+  // ✅ الرابط الأصلي يُعرض مباشرة في iframe الآن (بعد تفعيل PDF delivery في Cloudinary)
+  const viewerUrl = pdfUrl;
 
   return (
     <div

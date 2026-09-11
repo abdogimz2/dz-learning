@@ -112,7 +112,7 @@ export default function AdminDashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-black text-gray-900 dark:text-white">لوحة التحكم</h1>
-        <p className="text-gray-500 mt-1">نظرة عامة على منصة Mindly</p>
+        <p className="text-gray-500 mt-1">نظرة عامة على منصة Darsna</p>
       </div>
 
       {/* Stats Grid */}

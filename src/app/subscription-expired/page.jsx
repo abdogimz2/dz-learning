@@ -46,7 +46,7 @@ export default function SubscriptionExpiredPage() {
           <div className="text-center space-y-2">
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
               لقد انتهى الموسم الدراسي وتم حذف حسابك تلقائياً.
-              للاستمرار في الاستفادة من منصة <span className="font-black text-primary">Mindly</span>،
+              للاستمرار في الاستفادة من منصة <span className="font-black text-primary">Darsna</span>،
               يرجى إنشاء حساب جديد للموسم القادم.
             </p>
           </div>
@@ -86,7 +86,7 @@ export default function SubscriptionExpiredPage() {
           </div>
 
           <p className="text-center text-xs text-gray-400">
-            للاستفسار: <a href="mailto:contact@mindly.dz" className="text-primary hover:underline">contact@mindly.dz</a>
+            للاستفسار: <a href="mailto:Darsna1@gmail.com" className="text-primary hover:underline">Darsna1@gmail.com</a>
           </p>
         </div>
       </motion.div>

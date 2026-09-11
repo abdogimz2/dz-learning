@@ -63,7 +63,7 @@ const SECTIONS = [
     title: "6. تواصل معنا",
     content: [
       "إذا كان لديك أي استفسار حول سياسة الخصوصية، تواصل معنا على:",
-      "البريد الإلكتروني: contact@mindly.dz",
+      "البريد الإلكتروني: Darsna1@gmail.com",
       "سنرد على طلبك خلال 48 ساعة عمل.",
     ],
   },
@@ -86,7 +86,7 @@ export default function PrivacyPage() {
             </h1>
             <p className="text-gray-500">آخر تحديث: مارس 2026</p>
             <p className="text-lg text-gray-600 dark:text-gray-300 mt-4 leading-relaxed">
-              نحن في Mindly نأخذ خصوصيتك بجدية تامة. توضح هذه السياسة كيف نجمع بياناتك ونستخدمها ونحميها.
+              نحن في Darsna نأخذ خصوصيتك بجدية تامة. توضح هذه السياسة كيف نجمع بياناتك ونستخدمها ونحميها.
             </p>
           </motion.div>
         </div>

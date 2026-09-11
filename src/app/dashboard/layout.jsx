@@ -11,6 +11,7 @@ import {
 import { SimpleThemeToggle }      from "@/components/simple-theme-toggle";
 import { useAuthStore }           from "@/store/authStore";
 import { useTaskTracker }         from "@/hooks/useTaskTracker";
+import { useSubscriptionGuard }   from "@/hooks/useSubscriptionGuard";
 import { useRepetitionStore }     from "@/store/useRepetitionStore";
 import RepetitionNotification     from "@/components/RepetitionNotification";
 import { db }                     from "@/lib/firebase/config";
@@ -32,6 +33,12 @@ export default function DashboardLayout({ children }) {
   const { user, isAuthenticated, logout, loading, setUser } = useAuthStore();
   const { getDueCards } = useRepetitionStore();
   useTaskTracker();
+  useSubscriptionGuard();
+
+  const hydrateRepetition = useRepetitionStore((s) => s.hydrate);
+  useEffect(() => {
+    if (user?.id) hydrateRepetition(user.id);
+  }, [user?.id, hydrateRepetition]);
 
   const dueCount = user?.id ? getDueCards(user.id).length : 0;
 

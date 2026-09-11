@@ -51,7 +51,7 @@ export default function AboutPage() {
           <motion.div initial={{opacity:0,y:30}} animate={{opacity:1,y:0}} transition={{duration:0.8}}>
             <span className="inline-block bg-primary/10 text-primary font-bold text-sm px-4 py-2 rounded-full mb-6">من نحن</span>
             <h1 className="text-5xl md:text-6xl font-black text-gray-900 dark:text-white mb-6 leading-tight">
-              منصة <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Mindly</span>
+              منصة <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Darsna</span>
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
               منصة تعليمية جزائرية تأسست بهدف توفير تجربة تعلم متكاملة وممتعة
@@ -69,7 +69,7 @@ export default function AboutPage() {
               <h2 className="text-4xl font-black text-gray-900 dark:text-white mb-6">رسالتنا</h2>
               <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
                 نؤمن بأن كل طالب جزائري يستحق الوصول إلى تعليم عالي الجودة بطريقة سهلة وممتعة.
-                لذلك بنينا منصة Mindly لتكون رفيقه في رحلته الدراسية من المتوسط حتى البكالوريا.
+                لذلك بنينا منصة Darsna لتكون رفيقه في رحلته الدراسية من المتوسط حتى البكالوريا.
               </p>
               <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
                 نجمع بين أفضل المحتوى التعليمي ونظام تحفيزي ذكي يجعل الطالب يستمتع بالتعلم

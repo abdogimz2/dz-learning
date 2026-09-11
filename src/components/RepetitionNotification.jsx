@@ -14,21 +14,27 @@ import { useRepetitionStore } from "@/store/useRepetitionStore";
 export default function RepetitionNotification() {
   const router  = useRouter();
   const user    = useAuthStore(s => s.user);
-  const { getDueCards, snoozeCard, removeCard } = useRepetitionStore();
+  const { getDueCards, snoozeCard, removeCard, scheduledCards } = useRepetitionStore();
 
   const [dueCards,  setDueCards]  = useState([]);
   const [open,      setOpen]      = useState(false);
   const [cardIndex, setCardIndex] = useState(0);
   const [flipped,   setFlipped]   = useState(false);
   const dropdownRef               = useRef(null);
+  const autoOpenedRef             = useRef(false); // يفتح تلقائياً مرة وحدة فقط في الجلسة
 
   // تحميل الأسئلة + فتح تلقائي
+  // ✅ نعتمد أيضاً على scheduledCards باش نعيد الحساب بعد ما يخلص جلبها من Firestore (hydrate)،
+  // مو بس مرة وحدة عند توفر user.id فقط
   useEffect(() => {
     if (!user?.id) return;
     const due = getDueCards(user.id);
     setDueCards(due);
-    if (due.length > 0) setTimeout(() => setOpen(true), 1200);
-  }, [user?.id]);
+    if (due.length > 0 && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setTimeout(() => setOpen(true), 1200);
+    }
+  }, [user?.id, scheduledCards]);
 
   // إغلاق عند الضغط خارج الـ dropdown
   useEffect(() => {

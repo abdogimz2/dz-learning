@@ -23,24 +23,13 @@ export default function FlashcardSession({
 }) {
   const user             = useAuthStore((state) => state.user);
   const { scheduleCard } = useRepetitionStore();
-  const { saveProgress, getProgress, clearProgress } = useFlashcardProgressStore();
+  const { saveProgress, clearProgress } = useFlashcardProgressStore();
 
   const total = cards.length;
 
-  // ─── تحديد نقطة البداية ───────────────────────────────────────────────────
-  // إذا isReview=true  → ابدأ من startIndex (البطاقة الصعبة المحددة)
-  // إذا isReview=false → ابدأ من التقدم المحفوظ في localStorage
-  const getInitialIndex = () => {
-    if (isReview) {
-      // جاي من إشعار مراجعة — ابدأ من البطاقة المحددة مباشرة
-      return startIndex >= total ? 0 : startIndex;
-    }
-    // جلسة عادية — استأنف من التقدم المحفوظ
-    const savedIndex = user?.id ? getProgress(user.id, sessionKey) : 0;
-    return savedIndex >= total ? 0 : savedIndex;
-  };
-
-  const initialIndex = getInitialIndex();
+  // ✅ startIndex يوصل جاهزاً من الأب في الحالتين معاً (مراجعة أو جلسة عادية)،
+  // بعد ما يكون الأب استدعى loadProgress() من Firestore مسبقاً
+  const initialIndex = startIndex >= total ? 0 : startIndex;
 
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [flipped,      setFlipped]      = useState(false);

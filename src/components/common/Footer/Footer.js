@@ -165,8 +165,8 @@ export default function Footer() {
                 <Mail size={18} className="text-secondary mt-1 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-white">الدعم الفني</p>
-                  <a href="mailto:contact@mindly.dz" className="text-sm hover:text-secondary transition-colors">
-                    contact@mindly.dz
+                  <a href="mailto:Darsna1@gmail.com" className="text-sm hover:text-secondary transition-colors">
+                  Darsnadz1@gmail.com
                   </a>
                   <p className="text-xs text-gray-500 mt-1">نرد خلال 24 ساعة</p>
                 </div>
@@ -177,10 +177,10 @@ export default function Footer() {
                 <div>
                   <p className="font-medium text-white">البريد الإلكتروني</p>
                   <a
-                    href="mailto:contact@mindly.dz"
+                    href="mailto:Darsna2@gmail.com"
                     className="text-sm hover:text-secondary transition-colors"
                   >
-                    contact@mindly.dz
+                    Darsnadz2@gmail.com
                   </a>
                   <p className="text-xs text-gray-500 mt-1">نرد خلال 24 ساعة</p>
                 </div>
@@ -193,7 +193,7 @@ export default function Footer() {
                 />
                 <div>
                   <p className="font-medium text-white">العنوان</p>
-                  <p className="text-sm">الجزائر العاصمة، حي القبة</p>
+                  <p className="text-sm">الجزائر العاصمة</p>
                   <p className="text-xs text-gray-500 mt-1">
                     مبنى التعليم الرقمي، الطابق الثالث
                   </p>
@@ -211,7 +211,7 @@ export default function Footer() {
                 © {currentYear} منصة درسنا التعليمية. جميع الحقوق محفوظة.
               </p>
               <p className="text-sm text-gray-600 mt-1">
-                ⚡ تم التطوير مع الحب للجزائر
+                ⚡تم التطوير بواسطة فريق مختص لتسهيل دراستكم معنا 
               </p>
             </div>
 
@@ -247,7 +247,7 @@ export default function Footer() {
           <div className="flex justify-center mt-8 pt-6 border-t border-gray-800">
             <div className="bg-gray-800 rounded-lg px-4 py-2 inline-block text-center">
               <span className="text-primary font-bold">SSL</span>
-              <p className="text-xs text-gray-500 mt-1">اتصال آمن 100%</p>
+              <p className="text-xs text-gray-500 mt-1">%اتصال امن 100</p>
             </div>
           </div>
 
