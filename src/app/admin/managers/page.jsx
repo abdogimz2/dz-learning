@@ -211,10 +211,10 @@ export default function AdminManagersPage() {
             onClick={() => { setShowForm(false); resetForm(); }}>
             <motion.div initial={{scale:0.95,y:20}} animate={{scale:1,y:0}}
               onClick={e => e.stopPropagation()}
-              className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-md space-y-5" dir="rtl">
+              className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col" dir="rtl">
 
-              {/* Header */}
-              <div className="flex items-center justify-between">
+              {/* Header (ثابت فوق، ما يتحركش مع السكرول) */}
+              <div className="flex items-center justify-between p-6 pb-4 flex-shrink-0 border-b border-gray-100 dark:border-gray-800">
                 <div>
                   <h3 className="font-black text-xl text-gray-800 dark:text-white">إضافة أدمن جديد</h3>
                   <p className="text-xs text-gray-400 mt-0.5">اختر نوع الأدمن أولاً</p>
@@ -224,6 +224,9 @@ export default function AdminManagersPage() {
                   <X size={20}/>
                 </button>
               </div>
+
+              {/* محتوى قابل للسكرول */}
+              <div className="flex-1 min-h-0 overflow-y-auto p-6 pt-4 space-y-5">
 
               {/* ── اختيار النوع ── */}
               <div className="grid grid-cols-2 gap-3">
@@ -344,8 +347,11 @@ export default function AdminManagersPage() {
                   </p>
                 </div>
               )}
+              </div>
+              {/* نهاية المحتوى القابل للسكرول */}
 
-              <div className="flex gap-3">
+              {/* Footer ثابت تحت (يبقى ظاهر دايماً حتى لو المحتوى فوقه طويل) */}
+              <div className="flex gap-3 p-6 pt-4 flex-shrink-0 border-t border-gray-100 dark:border-gray-800">
                 <button onClick={() => { setShowForm(false); resetForm(); }}
                   className="flex-1 py-3 rounded-2xl border-2 border-gray-200 dark:border-gray-700 font-bold text-gray-600 dark:text-gray-300">
                   إلغاء
