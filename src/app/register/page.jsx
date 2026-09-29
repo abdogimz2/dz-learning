@@ -631,7 +631,7 @@ export default function RegisterPage() {
                 disabled={loading || success}
               >
                 <option value="">اختر المستوى الدراسي</option>
-                <option value="middle">الطور المتوسط</option>
+                <option value="middle">السنة الرابعة متوسط</option>
                 <option value="secondary">الطور الثانوي</option>
               </select>
               {formErrors.level && (
@@ -832,7 +832,7 @@ export default function RegisterPage() {
               <span className="text-sm font-medium text-yellow-800 dark:text-yellow-300">معلومة مهمة</span>
             </div>
             <p className="text-xs text-yellow-700 dark:text-yellow-400">
-              💰 بعد إنشاء الحساب، ستتوجه مباشرة إلى صفحة الدفع لدفع رسوم الاشتراك (5000 د.ج)<br/>
+            💰 بعد إنشاء الحساب، ستتوجه مباشرة إلى صفحة الدفع لدفع رسوم الاشتراك<br/>
               ⏳ سيتم تفعيل حسابك خلال 24 ساعة بعد التحقق من الدفع<br/>
               📚 بمجرد التفعيل، ستحصل على كامل المحتوى الدراسي المناسب لمستواك
             </p>

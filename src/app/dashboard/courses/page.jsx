@@ -105,6 +105,8 @@ const ALL_SUBJECTS = {
     { id: "aph26", title: "إنجليزية", color: "blue", icon: "🇬🇧" },
     { id: "aph27", title: "تربية إسلامية", color: "emerald", icon: "☪️" },
     { id: "aph28", title: "رياضيات", color: "blue", icon: "📐" },
+    { id: "aph29", title: "علوم طبيعية", color: "green", icon: "🌿" },
+    { id: "aph210", title: "فيزياء", color: "purple", icon: "⚡" },
   ],
 
   "2sec_arts_lang": [

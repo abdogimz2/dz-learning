@@ -115,10 +115,7 @@ export default function Footer() {
                 </h5>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    "السنة الأولى",
-                    "السنة الثانية",
-                    "السنة الثالثة",
-                    "السنة الرابعة",
+                    "السنة الرابعة متوسط",
                   ].map((level) => (
                     <Link
                       key={level}
@@ -141,6 +138,8 @@ export default function Footer() {
                     { label: "شعبة آداب", color: "hover:bg-secondary" },
                     { label: "شعبة تسيير", color: "hover:bg-primary" },
                     { label: "شعبة تقني", color: "hover:bg-secondary" },
+                    { label: "شعبة لغات", color: "hover:bg-primary" },
+                    { label: "شعبة رياضي", color: "hover:bg-primary" },
                   ].map((spec) => (
                     <Link
                       key={spec.label}

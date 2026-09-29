@@ -151,8 +151,8 @@ export default function Home() {
               className="flex flex-col bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-primary/20 dark:border-primary/40"
             >
               <div className="bg-primary text-white p-8">
-                <h3 className="text-3xl font-bold">التعليم المتوسط</h3>
-                <p className="text-lg opacity-90 mt-1">السنة 1–4</p>
+                <h3 className="text-3xl font-bold">السنة الرابعة متوسط</h3>
+                <p className="text-lg opacity-90 mt-1">شهادة التعليم المتوسط</p>
               </div>
               <div className="p-8 flex flex-col flex-1">
                 <ul className="grid grid-cols-2 gap-3 text-gray-700 dark:text-gray-300">

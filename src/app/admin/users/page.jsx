@@ -18,6 +18,7 @@ const STATUS_CONFIG = {
   active:               { label: "مفعّل",         color: "emerald", icon: CheckCircle },
   pending:              { label: "قيد الانتظار",   color: "orange",  icon: Clock },
   waiting_verification: { label: "بانتظار التحقق", color: "yellow",  icon: Clock },
+  subscription_expired: { label: "انتهى الاشتراك", color: "orange",  icon: Clock },
   suspended:            { label: "موقوف",          color: "red",     icon: XCircle },
 };
 
@@ -312,20 +313,25 @@ export default function AdminUsersPage() {
   };
 
   const filtered = users.filter((u) => {
-    // ✅ التغيير الوحيد: نخفي الحسابات غير المفعّلة من كل الفلاتر
-    if (u.status !== "active" && u.status !== "suspended") return false;
+    // ✅ الحالة المطلوبة حسب الفلتر المختار: مفعّلة افتراضياً، أو قيد الانتظار، أو موقوفة
+    const inSelectedBucket =
+      filterStatus === "suspended" ? u.status === "suspended" :
+      filterStatus === "pending"   ? ["pending", "waiting_verification", "subscription_expired"].includes(u.status) :
+      u.status === "active"; // "all"
+    if (!inSelectedBucket) return false;
+
     const matchSearch =
       !search ||
       `${u.name} ${u.surname} ${u.email}`.toLowerCase().includes(search.toLowerCase());
-    const matchStatus =
-      filterStatus === "all" || u.status === filterStatus;
-    return matchSearch && matchStatus;
+    return matchSearch;
   });
 
+  // ✅ نفس الصيغة بالضبط المستعملة في لوحة التحكم الرئيسية (admin/page.jsx)
+  // حتى يتطابق الرقمين دائماً بين الصفحتين
   const stats = {
-    total:     users.length,
+    total:     users.filter((u) => u.role !== "admin" && u.status === "active").length,
     active:    users.filter((u) => u.status === "active").length,
-    pending:   users.filter((u) => ["pending","waiting_verification"].includes(u.status)).length,
+    pending:   users.filter((u) => ["pending","waiting_verification","subscription_expired"].includes(u.status)).length,
     suspended: users.filter((u) => u.status === "suspended").length,
   };
 
@@ -401,9 +407,7 @@ export default function AdminUsersPage() {
             className="pr-10 pl-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm appearance-none font-bold text-gray-700 dark:text-gray-300"
           >
             <option value="all">جميع الحسابات المفعلة </option>
-            
-            
-            
+            <option value="pending">قيد الانتظار</option>
             <option value="suspended">موقوفة</option>
           </select>
         </div>
