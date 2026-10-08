@@ -25,11 +25,19 @@ export default function FlashcardSession({
   const { scheduleCard } = useRepetitionStore();
   const { saveProgress, clearProgress } = useFlashcardProgressStore();
 
-  const total = cards.length;
+  // ✅ عدد البطاقات التي تُعرض قبل إعادة سؤال "مرة أخرى"
+  const AGAIN_GAP = 3;
 
   // ✅ startIndex يوصل جاهزاً من الأب في الحالتين معاً (مراجعة أو جلسة عادية)،
   // بعد ما يكون الأب استدعى loadProgress() من Firestore مسبقاً
-  const initialIndex = startIndex >= total ? 0 : startIndex;
+  const initialIndex = startIndex >= cards.length ? 0 : startIndex;
+
+  // ✅ طابور الجلسة: البطاقات الأصلية + أي بطاقة أُعيدت بزر "مرة أخرى"
+  const makeQueue = () => cards.map((card, i) => ({ card, orig: i, repeat: false }));
+  const [queue,        setQueue]        = useState(makeQueue);
+  // عدد البطاقات الأصلية التي تم تجاوزها (هو ما يُحفظ للاستئناف)
+  const [origDone,     setOrigDone]     = useState(initialIndex);
+  const total = queue.length;
 
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [flipped,      setFlipped]      = useState(false);
@@ -47,10 +55,10 @@ export default function FlashcardSession({
   // ─── حفظ التقدم — فقط في الجلسة العادية وليس المراجعة ───────────────────
   useEffect(() => {
     if (!user?.id || finished || isReview) return;
-    saveProgress(user.id, sessionKey, currentIndex);
-  }, [currentIndex, user?.id, sessionKey, finished, isReview]);
+    saveProgress(user.id, sessionKey, origDone);
+  }, [origDone, user?.id, sessionKey, finished, isReview]);
 
-  const current  = cards[currentIndex];
+  const current  = queue[currentIndex].card;
   const progress = (currentIndex / total) * 100;
 
   const handleRating = (rating) => {
@@ -74,7 +82,18 @@ export default function FlashcardSession({
 
     setResults((prev) => [...prev, { cardId: current.id, rating }]);
 
-    if (currentIndex + 1 >= total) {
+    // ✅ "مرة أخرى": أعد السؤال بعد AGAIN_GAP بطاقات (أو في النهاية إن لم يبقَ كثير)
+    const item = queue[currentIndex];
+    let nextQueue = queue;
+    if (rating === "again") {
+      const pos = Math.min(currentIndex + 1 + AGAIN_GAP, queue.length);
+      nextQueue = [...queue.slice(0, pos), { ...item, repeat: true }, ...queue.slice(pos)];
+      setQueue(nextQueue);
+    } else if (!item.repeat) {
+      setOrigDone(item.orig + 1);
+    }
+
+    if (currentIndex + 1 >= nextQueue.length) {
       if (user?.id && !isReview) clearProgress(user.id, sessionKey);
       setFinished(true);
     } else {
@@ -85,6 +104,8 @@ export default function FlashcardSession({
 
   const restart = () => {
     if (user?.id && !isReview) clearProgress(user.id, sessionKey);
+    setQueue(makeQueue());
+    setOrigDone(isReview ? startIndex : 0);
     setCurrentIndex(isReview ? startIndex : 0);
     setFlipped(false);
     setResults([]);
@@ -94,9 +115,13 @@ export default function FlashcardSession({
 
   // ─── شاشة النتائج ─────────────────────────────────────────────────────────
   if (finished) {
-    const easy  = results.filter((r) => r.rating === "easy").length;
-    const good  = results.filter((r) => r.rating === "good").length;
-    const hard  = results.filter((r) => r.rating === "hard").length;
+    // التقييم النهائي لكل بطاقة (آخر مرة أُجيب عنها) — "مرة أخرى" = عدد مرات الضغط
+    const lastRating = new Map();
+    results.forEach((r) => lastRating.set(r.cardId, r.rating));
+    const finals = [...lastRating.values()];
+    const easy  = finals.filter((r) => r === "easy").length;
+    const good  = finals.filter((r) => r === "good").length;
+    const hard  = finals.filter((r) => r === "hard").length;
     const again = results.filter((r) => r.rating === "again").length;
 
     return (
@@ -113,7 +138,7 @@ export default function FlashcardSession({
           <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-2">
             {isReview ? "انتهت المراجعة! 🧠" : "انتهت الجلسة! 🎉"}
           </h2>
-          <p className="text-gray-500 mb-6">لقد أجبت على {results.length} سؤال</p>
+          <p className="text-gray-500 mb-6">لقد أجبت على {lastRating.size} سؤال</p>
 
           {hard > 0 && (
             <div className="mb-5 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-2xl p-3 text-sm text-orange-700 dark:text-orange-400 font-bold flex items-center gap-2">
@@ -268,6 +293,9 @@ export default function FlashcardSession({
               <>
                 <p className="text-center text-xs text-gray-400">
                   🧠 اختيار <span className="font-bold text-orange-500">صعب</span> سيُذكّرك بهذا السؤال بعد 3 أيام
+                </p>
+                <p className="text-center text-xs text-gray-400">
+                  🔁 اختيار <span className="font-bold text-red-500">مرة أخرى</span> يعيد السؤال بعد قليل في نفس الجلسة
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   {[

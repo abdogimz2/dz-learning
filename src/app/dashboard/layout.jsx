@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, BookOpen, Trophy, ShoppingBag,
-  Settings, LogOut, Menu, X, Bell, Search, Target,
+  Settings, LogOut, Menu, X, Bell, Target,
 } from "lucide-react";
 import { SimpleThemeToggle }      from "@/components/simple-theme-toggle";
 import { useAuthStore }           from "@/store/authStore";
@@ -153,15 +153,7 @@ export default function DashboardLayout({ children }) {
             <Menu size={28} />
           </button>
 
-          <div className="hidden md:flex items-center flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input type="text" placeholder="ابحث عن درس..."
-                className="w-full pr-10 pl-4 py-2 bg-gray-100 dark:bg-gray-800 border-none rounded-xl outline-none text-sm" />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 ms-auto">
             {/* جرس الإشعارات */}
             <div className="relative">
               <button

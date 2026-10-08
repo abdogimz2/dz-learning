@@ -10,10 +10,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/lib/firebase/config";
-import { collection, getDocs, query, orderBy, limit, where } from "firebase/firestore";
+import { collection, getDocs, getCountFromServer, query, orderBy, limit, where } from "firebase/firestore";
 
 export default function AdminDashboardPage() {
-  const [stats,       setStats]       = useState(null);
+  const EMPTY_STATS = { totalStudents: 0, activeStudents: 0, pendingPay: 0, approvedPay: 0, totalContent: 0, pendingUsers: 0 };
+  const [stats,       setStats]       = useState(EMPTY_STATS);
+  const [loadError,   setLoadError]   = useState(null);
   const [recentUsers, setRecentUsers] = useState([]);
   const [recentPay,   setRecentPay]   = useState([]);
   const [loading,     setLoading]     = useState(true);
@@ -21,24 +23,24 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        // ─── المستخدمون ───────────────────────────────────────────────────────
-        const usersSnap    = await getDocs(collection(db, "users"));
-        const allUsers     = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        // ─── العدّ بدون قراءة المستندات (قراءة واحدة تقريباً لكل 1000 مستند) ───
+        const countOf = async (q) => (await getCountFromServer(q)).data().count;
+        const users    = collection(db, "users");
+        const payments = collection(db, "payments");
 
-        // ✅ إجمالي الطلاب = المفعّلون فقط (ليس كل المسجّلين)
-        const totalStudents  = allUsers.filter((u) => u.role !== "admin" && u.status === "active").length;
-        const activeStudents = allUsers.filter((u) => u.status === "active").length;
+        const [
+          activeStudents, activeMainAdmins,
+          pendingPay, approvedPay, totalContent,
+        ] = await Promise.all([
+          countOf(query(users, where("status", "==", "active"))),
+          countOf(query(users, where("status", "==", "active"), where("role", "==", "admin"))),
+          countOf(query(payments, where("status", "==", "pending"))),
+          countOf(query(payments, where("status", "==", "approved"))),
+          countOf(collection(db, "content")),
+        ]);
 
-        // ─── المدفوعات ───────────────────────────────────────────────────────
-        const paySnap       = await getDocs(collection(db, "payments"));
-        const allPayments   = paySnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        // ✅ بانتظار التفعيل = طلبات الدفع المعلقة فقط
-        const pendingPay    = allPayments.filter((p) => p.status === "pending").length;
-        const approvedPay   = allPayments.filter((p) => p.status === "approved").length;
-
-        // ─── المحتوى ─────────────────────────────────────────────────────────
-        const contentSnap   = await getDocs(collection(db, "content"));
-        const totalContent  = contentSnap.size;
+        // إجمالي الطلاب = المفعّلون غير الأدمن الرئيسي
+        const totalStudents = activeStudents - activeMainAdmins;
 
         setStats({
           totalStudents, activeStudents,
@@ -67,6 +69,11 @@ export default function AdminDashboardPage() {
 
       } catch (err) {
         console.error(err);
+        setLoadError(
+          err?.code === "resource-exhausted" || /quota/i.test(err?.message || "")
+            ? "تم تجاوز حصة قراءات الاستضافة المجانية اليومية. ستعود البيانات بعد تجديد الحصة (منتصف الليل بتوقيت المحيط الهادئ) أو عند الترقية إلى خطة Blaze."
+            : "تعذّر تحميل البيانات. حاول مرة أخرى."
+        );
       } finally {
         setLoading(false);
       }
@@ -114,6 +121,12 @@ export default function AdminDashboardPage() {
         <h1 className="text-3xl font-black text-gray-900 dark:text-white">لوحة التحكم</h1>
         <p className="text-gray-500 mt-1">نظرة عامة على منصة Darsna</p>
       </div>
+
+      {loadError && (
+        <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm font-bold">
+          {loadError}
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">

@@ -1,7 +1,7 @@
 // src/app/admin/courses/page.jsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, FileText, HelpCircle, Upload, CheckCircle,
@@ -9,7 +9,7 @@ import {
   Search, Pencil, RefreshCw, Copy,
 } from "lucide-react";
 import { db } from "@/lib/firebase/config";
-import { collection, addDoc, serverTimestamp, getDocs, deleteDoc, updateDoc, query, orderBy, doc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, deleteDoc, updateDoc, query, orderBy, limit, startAfter, where, doc } from "firebase/firestore";
 
 const LEVELS = [
   { value: "middle",            label: "التعليم المتوسط" },
@@ -58,7 +58,7 @@ const SUBJECTS_BY_LEVEL = {
   "2sec_science_tech": ["رياضيات","فيزياء","لغة عربية","فرنسية","إنجليزية","تاريخ","جغرافيا","تربية إسلامية","هندسة كهربائية","هندسة ميكانيكية","هندسة مدنية","هندسة الطرائق"],
   "2sec_science_eco": ["محاسبة","اقتصاد","قانون","رياضيات","لغة عربية","تاريخ","جغرافيا","فرنسية","إنجليزية","تربية إسلامية"],
   "2sec_arts_philo": ["لغة عربية","فلسفة","تاريخ","جغرافيا","فرنسية","إنجليزية","تربية إسلامية","رياضيات","علوم طبيعية","فيزياء"],
-  "2sec_arts_lang": ["لغة عربية","فرنسية","إنجليزية","فلسفة","تاريخ","جغرافيا","تربية إسلامية","رياضيات","لغة ألمانية","لغة إسبانية","لغة إيطالية"],
+  "2sec_arts_lang": ["لغة عربية","فرنسية","إنجليزية","تاريخ","جغرافيا","تربية إسلامية","رياضيات","لغة ألمانية","لغة إسبانية","لغة إيطالية"],
   science_exp: ["علوم طبيعية","فيزياء","رياضيات","تربية إسلامية","فلسفة","لغة عربية","تاريخ","جغرافيا","فرنسية","إنجليزية"],
   science_math: ["رياضيات","فيزياء","علوم طبيعية","فلسفة","لغة عربية","تربية إسلامية","تاريخ","جغرافيا","فرنسية","إنجليزية"],
   science_tech: ["رياضيات","فيزياء","فلسفة","لغة عربية","تربية إسلامية","تاريخ","جغرافيا","فرنسية","إنجليزية","هندسة كهربائية","هندسة ميكانيكية","هندسة مدنية","هندسة الطرائق"],
@@ -338,17 +338,63 @@ function ManageContent({ showToast }) {
   const [filterSubject, setFilterSubject] = useState("");
   const [searchText,    setSearchText]    = useState("");
 
-  const fetchContent = useCallback(async () => {
+  // ✅ تحميل على دفعات + فلترة وبحث من الخادم (المحتوى يتجاوز 50 ألف مستند،
+  //    لذلك لا يمكن فلترة ما حُمّل فقط في المتصفح)
+  const PAGE_SIZE = 25;
+  const TIMEOUT_MS = 20000;
+  const [hasMore, setHasMore] = useState(false);
+  const lastDocRef = useRef(null);
+  const reqIdRef   = useRef(0);
+
+  const buildQuery = (more) => {
+    const parts = [collection(db, "content")];
+    const term  = searchText.trim();
+    if (term.length >= 2) {
+      // بحث ببداية العنوان (فهرس الحقل الواحد تلقائي — لا يحتاج فهرساً مركباً)
+      parts.push(where("title", ">=", term), where("title", "<=", term + "\uf8ff"), orderBy("title"));
+    } else {
+      // شروط مساواة فقط بدون orderBy => لا حاجة لفهارس مركبة
+      if (filterLevel)        parts.push(where("level",   "==", filterLevel));
+      if (filterSubject)      parts.push(where("subject", "==", filterSubject));
+      if (filterType !== "all") parts.push(where("type",  "==", filterType));
+      if (parts.length === 1) parts.push(orderBy("createdAt", "desc"));
+    }
+    if (more && lastDocRef.current) parts.push(startAfter(lastDocRef.current));
+    parts.push(limit(PAGE_SIZE));
+    return query(...parts);
+  };
+
+  const fetchContent = useCallback(async (more = false) => {
+    const myReq = ++reqIdRef.current;
     setLoading(true);
     try {
-      const q    = query(collection(db, "content"), orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
-      setItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    } catch { showToast("error", "فشل تحميل المحتوى"); }
-    finally   { setLoading(false); }
-  }, []);
+      const snap = await Promise.race([
+        getDocs(buildQuery(more)),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), TIMEOUT_MS)),
+      ]);
+      if (myReq !== reqIdRef.current) return; // طلب أقدم — تجاهله
+      let rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      lastDocRef.current = snap.docs[snap.docs.length - 1] || (more ? lastDocRef.current : null);
+      setHasMore(snap.docs.length === PAGE_SIZE);
+      setItems(prev => more ? [...prev, ...rows] : rows);
+    } catch (err) {
+      if (myReq !== reqIdRef.current) return;
+      console.error("fetchContent:", err);
+      showToast("error", err?.message === "timeout"
+        ? "انتهت مهلة التحميل — تحقق من الاتصال أو من حصة Firestore"
+        : `فشل تحميل المحتوى (${err?.code || err?.message || "unknown"})`);
+    } finally {
+      if (myReq === reqIdRef.current) setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterLevel, filterSubject, filterType, searchText]);
 
-  useEffect(() => { fetchContent(); }, []);
+  // إعادة الجلب عند تغيّر الفلاتر/البحث (مع تأخير بسيط أثناء الكتابة)
+  useEffect(() => {
+    lastDocRef.current = null;
+    const t = setTimeout(() => fetchContent(false), 400);
+    return () => clearTimeout(t);
+  }, [fetchContent]);
 
   const handleDelete = async (id) => {
     setDeleting(id);
@@ -501,9 +547,9 @@ function ManageContent({ showToast }) {
       <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-black text-gray-800 dark:text-white text-lg">
-            {loading ? "جاري التحميل..." : `${filtered.length} عنصر`}
+            {loading ? "جاري التحميل..." : `${filtered.length} عنصر${hasMore ? "+" : ""}`}
           </h2>
-          <button onClick={fetchContent} disabled={loading}
+          <button onClick={() => fetchContent(false)} disabled={loading}
             className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 transition-all disabled:opacity-50">
             <RefreshCw size={14} className={loading ? "animate-spin" : ""}/>
             تحديث
@@ -567,7 +613,7 @@ function ManageContent({ showToast }) {
               ? "🖼️ سؤال بصورة"
               : item.title || item.question || "—";
             return (
-              <motion.div key={item.id} layout
+              <motion.div key={item.id}
                 className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all">
                 <div className={`p-2.5 rounded-xl flex-shrink-0 bg-${typeColor}-50 dark:bg-${typeColor}-900/20`}>
                   <TypeIcon className={`text-${typeColor}-500`} size={18}/>
@@ -601,6 +647,12 @@ function ManageContent({ showToast }) {
             );
           })}
         </div>
+      )}
+      {hasMore && !loading && (
+        <button onClick={() => fetchContent(true)}
+          className="w-full py-3 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
+          تحميل المزيد
+        </button>
       )}
     </div>
   );

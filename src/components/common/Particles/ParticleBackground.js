@@ -15,19 +15,23 @@ const ParticleBackground = () => {
       duration: Math.random() * 10 + 10,
       opacity: Math.random() * 0.4 + 0.1,
       colorType: Math.floor(Math.random() * 3), // 0: primary, 1: secondary, 2: mix
+      mixFlip: Math.random() > 0.5,
+      blur: Math.random() * 2,
+      round: Math.random() > 0.7,
+      radius: Math.random() * 20,
     }));
     setParticles(newParticles);
   }, []);
 
   // Color variations based on your brand
-  const getParticleColor = (colorType, opacity) => {
+  const getParticleColor = (colorType, opacity, mixFlip) => {
     switch(colorType) {
       case 0: // Primary color variations
         return `rgba(58, 38, 168, ${opacity})`; // #3a26a8
       case 1: // Secondary color variations
         return `rgba(3, 107, 237, ${opacity})`; // #036bed
       case 2: // Gradient/mixed colors
-        return Math.random() > 0.5 
+        return mixFlip 
           ? `rgba(58, 38, 168, ${opacity * 0.8})` 
           : `rgba(3, 107, 237, ${opacity})`;
       default:
@@ -48,10 +52,10 @@ const ParticleBackground = () => {
             height: `${particle.size}px`,
             animationDelay: `${particle.delay}s`,
             animationDuration: `${particle.duration}s`,
-            background: getParticleColor(particle.colorType, particle.opacity),
-            boxShadow: `0 0 ${particle.size / 2}px ${particle.size / 4}px ${getParticleColor(particle.colorType, particle.opacity * 0.5)}`,
-            filter: `blur(${Math.random() * 2}px)`,
-            borderRadius: Math.random() > 0.7 ? '50%' : `${Math.random() * 20}%`,
+            background: getParticleColor(particle.colorType, particle.opacity, particle.mixFlip),
+            boxShadow: `0 0 ${particle.size / 2}px ${particle.size / 4}px ${getParticleColor(particle.colorType, particle.opacity * 0.5, particle.mixFlip)}`,
+            filter: `blur(${particle.blur}px)`,
+            borderRadius: particle.round ? '50%' : `${particle.radius}%`,
           }}
         />
       ))}

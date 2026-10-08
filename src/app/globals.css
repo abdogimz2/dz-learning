@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Safelist: ألوان تُبنى ديناميكياً بقالب ${color} — Tailwind لا يكتشفها تلقائياً */
+@source inline("bg-{blue,emerald,orange,yellow,green,purple,red,teal,cyan,indigo,pink,violet,gray}-50");
+@source inline("dark:bg-{blue,emerald,orange,yellow,green,purple,red,teal,cyan,indigo,pink,violet,gray}-900/20");
+@source inline("text-{blue,emerald,orange,yellow,green,purple,red,teal,cyan,indigo,pink,violet,gray}-500");
+@source inline("text-{blue,emerald,orange,yellow,green,purple,red,teal,cyan,indigo,pink,violet,gray}-600");
+@source inline("dark:text-{blue,emerald,orange,yellow,green,purple,red,teal,cyan,indigo,pink,violet,gray}-400");
+@source inline("border-{blue,emerald,orange,yellow,green,purple,red,teal,cyan,indigo,pink,violet,gray}-200");
+@source inline("border-{blue,emerald,orange,yellow,green,purple,red,teal,cyan,indigo,pink,violet,gray}-400");
+@source inline("dark:border-{blue,emerald,orange,yellow,green,purple,red,teal,cyan,indigo,pink,violet,gray}-800");
+@source inline("dark:border-{blue,emerald,orange,yellow,green,purple,red,teal,cyan,indigo,pink,violet,gray}-900");
+@source inline("hover:bg-{blue,emerald,orange,yellow,green,purple,red,teal,cyan,indigo,pink,violet,gray}-50");
+@source inline("dark:hover:bg-{blue,emerald,orange,yellow,green,purple,red,teal,cyan,indigo,pink,violet,gray}-900/20");
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

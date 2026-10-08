@@ -113,7 +113,6 @@ const ALL_SUBJECTS = {
     { id: "alg21", title: "لغة عربية", color: "yellow", icon: "📖" },
     { id: "alg22", title: "فرنسية", color: "red", icon: "🇫🇷" },
     { id: "alg23", title: "إنجليزية", color: "blue", icon: "🇬🇧" },
-    { id: "alg24", title: "فلسفة", color: "purple", icon: "🧠" },
     { id: "alg25", title: "تاريخ", color: "orange", icon: "🏛️" },
     { id: "alg26", title: "جغرافيا", color: "teal", icon: "🗺️" },
     { id: "alg27", title: "تربية إسلامية", color: "emerald", icon: "☪️" },

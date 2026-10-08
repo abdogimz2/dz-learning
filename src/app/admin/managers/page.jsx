@@ -36,16 +36,6 @@ const MAIN_ADMIN_PERMISSIONS = [
 export default function AdminManagersPage() {
   const currentUser = useAuthStore(s => s.user);
 
-  if (currentUser?.role === "sub_admin") {
-    return (
-      <div className="h-[60vh] flex flex-col items-center justify-center gap-4 text-center" dir="rtl">
-        <ShieldOff size={52} className="text-red-400"/>
-        <p className="font-black text-2xl text-gray-800 dark:text-white">غير مصرح</p>
-        <p className="text-gray-500">هذه الصفحة متاحة للأدمن الرئيسي فقط</p>
-      </div>
-    );
-  }
-
   const [admins,    setAdmins]    = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [showForm,  setShowForm]  = useState(false);
@@ -82,7 +72,21 @@ export default function AdminManagersPage() {
     finally  { setLoading(false); }
   };
 
-  useEffect(() => { fetchAdmins(); }, []);
+  useEffect(() => {
+    if (currentUser?.role === "sub_admin") return;
+    fetchAdmins();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser?.role]);
+
+  if (currentUser?.role === "sub_admin") {
+    return (
+      <div className="h-[60vh] flex flex-col items-center justify-center gap-4 text-center" dir="rtl">
+        <ShieldOff size={52} className="text-red-400"/>
+        <p className="font-black text-2xl text-gray-800 dark:text-white">غير مصرح</p>
+        <p className="text-gray-500">هذه الصفحة متاحة للأدمن الرئيسي فقط</p>
+      </div>
+    );
+  }
 
   // ─── إضافة أدمن (رئيسي أو فرعي) ─────────────────────────────────────────
   const handleAdd = async () => {
@@ -440,7 +444,7 @@ export default function AdminManagersPage() {
               <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800">
                 <ShieldCheck size={40} className="mx-auto text-gray-300 mb-3"/>
                 <p className="font-bold text-gray-500">لا يوجد أدمنية فرعيون بعد</p>
-                <p className="text-xs text-gray-400 mt-1">اضغط "إضافة أدمن" لإضافة أول أدمن فرعي</p>
+                <p className="text-xs text-gray-400 mt-1">اضغط &quot;إضافة أدمن&quot; لإضافة أول أدمن فرعي</p>
               </div>
             ) : (
               <div className="space-y-2">
