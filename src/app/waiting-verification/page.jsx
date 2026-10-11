@@ -149,7 +149,7 @@ export default function WaitingVerificationPage() {
                 <p className="text-gray-600 dark:text-gray-400 text-sm text-right">
                   ستصلك رسالة تأكيد على{" "}
                   <span className="font-bold text-secondary">{user.email}</span>{" "}
-                  عند اكتمال التفعيل. تحقق من مجلد البريد العشوائي إذا لم تصلك.
+                  عند اكتمال التفعيل. تحقق من مجلد البريد العشوائي spam إذا لم تصلك.
                 </p>
               </div>
             </div>
@@ -180,8 +180,8 @@ export default function WaitingVerificationPage() {
 
             <p className="text-gray-400 text-sm">
               للاستفسار:{" "}
-              <a href="mailto:support@dz-learning.dz" className="text-secondary hover:underline">
-                support@dz-learning.dz
+              <a href="mailto:Darsnadz1@gmail.com" className="text-secondary hover:underline">
+              Darsnadz1@gmail.com
               </a>
             </p>
           </div>

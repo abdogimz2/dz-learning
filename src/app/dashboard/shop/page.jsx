@@ -13,6 +13,7 @@ import {
   serverTimestamp, orderBy, query, increment,
 } from "firebase/firestore";
 import { useAuthStore } from "@/store/authStore";
+import { scheduleLeaderboardSync } from "@/lib/leaderboard";
 
 export default function ShopPage() {
   const user       = useAuthStore(s => s.user);
@@ -76,6 +77,7 @@ export default function ShopPage() {
       await updateDoc(doc(db, "users", user.id), {
         points: increment(-product.price),
       });
+      scheduleLeaderboardSync(user.id);
 
       // ✅ 3. تحديث الـ authStore محلياً
       useAuthStore.setState(s => ({

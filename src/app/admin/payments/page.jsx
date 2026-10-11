@@ -320,6 +320,7 @@ export default function AdminPaymentsPage() {
           isActive:            true,
           paymentStatus:       "paid",
           subscriptionEnd:     subscriptionEnd.toISOString(),
+          subscriptionEndMs:   subscriptionEnd.getTime(), // تفحصه قواعد Firestore
           subscriptionEndDate: subscriptionEnd.toLocaleDateString("ar-DZ"),
           activatedAt:         serverTimestamp(),
           updatedAt:           serverTimestamp(),

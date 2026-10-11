@@ -9,7 +9,7 @@ import {
   Zap, CheckCircle, Clock, TrendingUp, Flame,
 } from "lucide-react";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, getCountFromServer, doc, getDoc } from "firebase/firestore";
 import { useAuthStore } from "@/store/authStore";
 import { useSubscriptionGuard } from "@/hooks/useSubscriptionGuard";
 
@@ -120,12 +120,6 @@ export default function DashboardHome() {
     loading:          true,
   });
 
-  // ─── تحميل الإحصائيات ───────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!user?.id) return;
-    loadStats();
-  }, [user?.id]);
-
   const loadStats = async () => {
     try {
       const today = getTodayStr();
@@ -155,24 +149,16 @@ export default function DashboardHome() {
         tasksCompleted = tSnap.docs.filter(d => d.data().completed).length;
       } catch {}
 
-      // ✅ 4. الترتيب — نفس طريقة لوحة المتصدرين بالضبط
-      // نجلب كل المستخدمين النشطين مرتبين بالنقاط ونجد موقعنا
+      // ✅ 4. الترتيب = عدد الطلاب الذين نقاطهم أعلى منك + 1
+      // (استعلام عدّ واحد على مجموعة leaderboard بدل قراءة 200 مستند)
       let rank = null;
       try {
-        const { orderBy: orderByFn, limit: limitFn } = await import("firebase/firestore");
-        const leaderSnap = await getDocs(
-          query(
-            collection(db, "users"),
-            orderByFn("points", "desc"),
-            limitFn(200)
-          )
-        );
-        const activeUsers = leaderSnap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(u => u.role !== "admin" && u.status === "active");
-
-        const myIndex = activeUsers.findIndex(u => u.id === user.id);
-        rank = myIndex >= 0 ? myIndex + 1 : null;
+        if (user.role === "student") {
+          const higher = await getCountFromServer(
+            query(collection(db, "leaderboard"), where("points", ">", realPoints))
+          );
+          rank = higher.data().count + 1;
+        }
       } catch {}
 
       setStats({
@@ -187,6 +173,12 @@ export default function DashboardHome() {
       setStats(s => ({ ...s, loading: false }));
     }
   };
+
+  // ─── تحميل الإحصائيات ───────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!user?.id) return;
+    loadStats();
+  }, [user?.id]);
 
   const taskPercent = stats.tasksTotal > 0
     ? Math.round((stats.tasksCompleted / stats.tasksTotal) * 100)

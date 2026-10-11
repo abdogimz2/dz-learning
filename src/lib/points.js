@@ -1,6 +1,7 @@
 // src/lib/points.js
 import { db } from "@/lib/firebase/config";
 import { doc, updateDoc, increment, serverTimestamp } from "firebase/firestore";
+import { scheduleLeaderboardSync } from "@/lib/leaderboard";
 
 export const POINTS = {
   flashcard_easy:  10,
@@ -22,6 +23,8 @@ export async function addPoints(userId, action) {
       points: increment(pts),
       updatedAt: serverTimestamp(),
     });
+
+    scheduleLeaderboardSync(userId);
 
     // تحديث Zustand
     const { useAuthStore } = await import("@/store/authStore");

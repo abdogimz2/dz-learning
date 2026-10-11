@@ -271,9 +271,11 @@ function AnimatedButton({ children, type }) {
 function StatItem({ number, label, delay }) {
   const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.3 });
   const [count, setCount] = useState(0);
+  // أرقام قابلة للعدّ فقط (مثل 500+)؛ نصوص مثل 24/7 تُعرض كما هي بلا عدّاد
+  const isCounter = /^\d+\+?$/.test(number);
 
   useEffect(() => {
-    if (!inView) return;
+    if (!inView || !isCounter) return;
 
     const target = parseInt(number) || 0;
     if (target === 0) { setCount(0); return; }
@@ -294,13 +296,19 @@ function StatItem({ number, label, delay }) {
     }, step);
 
     return () => clearInterval(timer);
-  }, [inView, number, delay]);
+  }, [inView, number, delay, isCounter]);
 
   return (
     <div ref={ref} className="text-center">
       <div className="text-5xl md:text-6xl font-extrabold text-primary dark:text-primary/90 mb-2">
-        {count}
-        {(number.includes("+") || number.includes("/")) && number.slice(-1)}
+        {isCounter ? (
+          <>
+            {count}
+            {number.includes("+") && "+"}
+          </>
+        ) : (
+          <span dir="ltr">{number}</span>
+        )}
       </div>
       <div className="text-lg text-gray-600 dark:text-gray-400 font-medium">
         {label}

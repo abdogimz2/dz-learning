@@ -10,12 +10,28 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/lib/firebase/config";
+import { useAuthStore } from "@/store/authStore";
+import { backfillLeaderboardAndSubscriptions } from "@/lib/maintenance";
 import { collection, getDocs, getCountFromServer, query, orderBy, limit, where } from "firebase/firestore";
 
 export default function AdminDashboardPage() {
   const EMPTY_STATS = { totalStudents: 0, activeStudents: 0, pendingPay: 0, approvedPay: 0, totalContent: 0, pendingUsers: 0 };
   const [stats,       setStats]       = useState(EMPTY_STATS);
   const [loadError,   setLoadError]   = useState(null);
+  const adminUser = useAuthStore((st) => st.user);
+  const [migrating,   setMigrating]   = useState(false);
+  const [migrateMsg,  setMigrateMsg]  = useState("");
+
+  const runMigration = async () => {
+    if (!confirm("تشغيل المزامنة لمرة واحدة؟ (تقرأ كل الحسابات المفعّلة)")) return;
+    setMigrating(true); setMigrateMsg("");
+    try {
+      const r = await backfillLeaderboardAndSubscriptions();
+      setMigrateMsg(`تمت: ${r.leaderboard} طالباً في المتصدرين، ${r.subscriptions} اشتراكاً (من ${r.scanned} حساباً)`);
+    } catch (e) {
+      setMigrateMsg(`فشلت: ${e?.code || e?.message}`);
+    } finally { setMigrating(false); }
+  };
   const [recentUsers, setRecentUsers] = useState([]);
   const [recentPay,   setRecentPay]   = useState([]);
   const [loading,     setLoading]     = useState(true);
@@ -71,7 +87,7 @@ export default function AdminDashboardPage() {
         console.error(err);
         setLoadError(
           err?.code === "resource-exhausted" || /quota/i.test(err?.message || "")
-            ? "تم تجاوز حصة قراءات الاستضافة المجانية اليومية. ستعود البيانات بعد تجديد الحصة (منتصف الليل بتوقيت المحيط الهادئ) أو عند الترقية إلى خطة Blaze."
+            ? "تم تجاوز حصة قراءات Firestore اليومية. ستعود البيانات بعد تجديد الحصة (منتصف الليل بتوقيت المحيط الهادئ) أو عند الترقية إلى خطة Blaze."
             : "تعذّر تحميل البيانات. حاول مرة أخرى."
         );
       } finally {
@@ -121,6 +137,16 @@ export default function AdminDashboardPage() {
         <h1 className="text-3xl font-black text-gray-900 dark:text-white">لوحة التحكم</h1>
         <p className="text-gray-500 mt-1">نظرة عامة على منصة Darsna</p>
       </div>
+
+      {adminUser?.role === "admin" && (
+        <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex flex-wrap items-center gap-3">
+          <button onClick={runMigration} disabled={migrating}
+            className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-bold disabled:opacity-50">
+            {migrating ? "جاري المزامنة..." : "مزامنة المتصدرين والاشتراكات (مرة واحدة)"}
+          </button>
+          {migrateMsg && <span className="text-sm text-gray-600 dark:text-gray-300">{migrateMsg}</span>}
+        </div>
+      )}
 
       {loadError && (
         <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm font-bold">

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   Facebook,
-  Twitter,
   Instagram,
   Youtube,
   Mail,
@@ -49,14 +48,9 @@ export default function Footer() {
                 />
               </a>
               <a
-                href="#"
-                className="bg-gray-800 hover:bg-primary p-2.5 rounded-lg transition-all duration-300 transform hover:-translate-y-1"
-                aria-label="Twitter"
-              >
-                <Twitter size={20} className="text-gray-400 hover:text-white" />
-              </a>
-              <a
-                href="#"
+                href="https://www.instagram.com/darsna.dz"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-gray-800 hover:bg-primary p-2.5 rounded-lg transition-all duration-300 transform hover:-translate-y-1"
                 aria-label="Instagram"
               >
@@ -164,7 +158,7 @@ export default function Footer() {
                 <Mail size={18} className="text-secondary mt-1 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-white">الدعم الفني</p>
-                  <a href="mailto:Darsna1@gmail.com" className="text-sm hover:text-secondary transition-colors">
+                  <a href="mailto:Darsnadz1@gmail.com" className="text-sm hover:text-secondary transition-colors">
                   Darsnadz1@gmail.com
                   </a>
                   <p className="text-xs text-gray-500 mt-1">نرد خلال 24 ساعة</p>
@@ -176,7 +170,7 @@ export default function Footer() {
                 <div>
                   <p className="font-medium text-white">البريد الإلكتروني</p>
                   <a
-                    href="mailto:Darsna2@gmail.com"
+                    href="mailto:Darsnadz2@gmail.com"
                     className="text-sm hover:text-secondary transition-colors"
                   >
                     Darsnadz2@gmail.com
@@ -193,9 +187,7 @@ export default function Footer() {
                 <div>
                   <p className="font-medium text-white">العنوان</p>
                   <p className="text-sm">الجزائر العاصمة</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    مبنى التعليم الرقمي، الطابق الثالث
-                  </p>
+                
                 </div>
               </div>
             </div>
@@ -246,7 +238,7 @@ export default function Footer() {
           <div className="flex justify-center mt-8 pt-6 border-t border-gray-800">
             <div className="bg-gray-800 rounded-lg px-4 py-2 inline-block text-center">
               <span className="text-primary font-bold">SSL</span>
-              <p className="text-xs text-gray-500 mt-1">%اتصال امن 100</p>
+              <p className="text-xs text-gray-500 mt-1">اتصال آمن 100%</p>
             </div>
           </div>
 

@@ -3,6 +3,7 @@
 
 import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
+import { scheduleLeaderboardSync } from "@/lib/leaderboard";
 import { db } from "@/lib/firebase/config";
 import {
   collection, query, where, getDocs,
@@ -178,6 +179,7 @@ export function useTaskTracker() {
             await updateDoc(doc(db, "users", currentUser.id), {
               points: increment(task.points),
             });
+            scheduleLeaderboardSync(currentUser.id);
             const freshUser = userRef.current;
             setUser({ ...freshUser, points: (freshUser.points || 0) + task.points });
 

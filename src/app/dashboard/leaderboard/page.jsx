@@ -7,6 +7,7 @@ import { Trophy, Star, Loader2, Users } from "lucide-react";
 import { db } from "@/lib/firebase/config";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { useAuthStore } from "@/store/authStore";
+import { syncLeaderboardNow } from "@/lib/leaderboard";
 
 const LEVEL_LABELS = {
   middle:        "المتوسط",
@@ -32,16 +33,17 @@ export default function LeaderboardPage() {
       setLoading(true);
       setError(null);
       try {
-        // ✅ query بسيط بدون where — فقط orderBy و limit
+        // ✅ نحدّث سجلّ الطالب نفسه أولاً ليظهر ترتيبه بأحدث نقاطه
+        if (user?.id && user.role === "student") await syncLeaderboardNow(user.id);
+
+        // ✅ مجموعة leaderboard فيها الاسم والنقاط فقط (بدون بريد أو هاتف)
         const q    = query(
-          collection(db, "users"),
+          collection(db, "leaderboard"),
           orderBy("points", "desc"),
           limit(50)
         );
         const snap = await getDocs(q);
-        const all  = snap.docs
-          .map((d) => ({ id: d.id, ...d.data() }))
-          .filter((u) => u.role !== "admin" && u.status === "active"); // فلتر في الكود
+        const all  = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
         setStudents(all);
       } catch (err) {
