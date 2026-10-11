@@ -25,7 +25,6 @@ import { auth } from "./config";
  */
 export const registerUser = async (email, password, userData) => {
   try {
-    console.log("🚀 محاولة إنشاء حساب جديد:", email);
     
     // التحقق الأولي من البيانات
     if (!email || !password) {
@@ -44,7 +43,6 @@ export const registerUser = async (email, password, userData) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
-    console.log("✅ تم إنشاء الحساب في Auth:", user.uid);
     
     // تحديث الملف الشخصي في Firebase Auth
     try {
@@ -60,7 +58,6 @@ export const registerUser = async (email, password, userData) => {
     // إرسال بريد التحقق (حسب الإعدادات)
     try {
       await sendEmailVerification(user);
-      console.log("📧 تم إرسال بريد التحقق");
     } catch (verificationError) {
       console.warn("⚠️ لم يتم إرسال بريد التحقق:", verificationError.message);
     }
@@ -96,7 +93,6 @@ export const registerUser = async (email, password, userData) => {
  */
 export const loginUser = async (email, password) => {
   try {
-    console.log("🚀 محاولة تسجيل دخول:", email);
     
     // التحقق من البيانات المدخلة
     if (!email || !password) {
@@ -109,7 +105,6 @@ export const loginUser = async (email, password) => {
     const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
     const user = userCredential.user;
     
-    console.log("✅ تم تسجيل الدخول:", user.uid);
     
     // تحديث آخر وقت تسجيل دخول في Firestore
     await updateLastLogin(user.uid);
@@ -118,7 +113,6 @@ export const loginUser = async (email, password) => {
     if (!user.emailVerified) {
       try {
         await sendEmailVerification(user);
-        console.log("📧 تم إعادة إرسال بريد التحقق");
       } catch (verificationError) {
         console.warn("⚠️ لم يتم إرسال بريد التحقق:", verificationError.message);
       }
@@ -160,10 +154,8 @@ export const loginUser = async (email, password) => {
  */
 export const logoutUser = async () => {
   try {
-    console.log("🚀 تسجيل الخروج...");
     const userEmail = auth.currentUser?.email;
     await signOut(auth);
-    console.log("✅ تم تسجيل الخروج بنجاح:", userEmail);
     
     // تنظيف التخزين المحلي
     localStorage.removeItem('auth_token');
@@ -185,7 +177,6 @@ export const logoutUser = async () => {
  */
 export const resetPassword = async (email) => {
   try {
-    console.log("🚀 إرسال رابط إعادة تعيين كلمة المرور:", email);
     
     if (!email) {
       throw new Error("البريد الإلكتروني مطلوب");
@@ -358,7 +349,6 @@ export const deleteAccount = async (password) => {
 export const onAuthChange = (callback) => {
   return onAuthStateChanged(auth, async (user) => {
     if (user) {
-      console.log("👤 المستخدم مسجل:", user.email);
       
       // جلب بيانات إضافية من Firestore إذا لزم الأمر
       const userData = {
@@ -377,7 +367,6 @@ export const onAuthChange = (callback) => {
       
       callback(userData);
     } else {
-      console.log("👤 لا يوجد مستخدم مسجل");
       callback(null);
     }
   });
@@ -466,7 +455,6 @@ const updateLastLogin = async (userId) => {
       loginCount: await incrementLoginCount(userId)
     });
     
-    console.log("📝 تم تحديث آخر تسجيل دخول للمستخدم:", userId);
   } catch (error) {
     console.error("❌ خطأ في تحديث آخر تسجيل دخول:", error.message);
   }

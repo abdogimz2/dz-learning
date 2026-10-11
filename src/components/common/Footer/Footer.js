@@ -4,6 +4,7 @@ import {
   Instagram,
   Youtube,
   Mail,
+  Phone,
   MapPin,
 } from "lucide-react";
 
@@ -180,6 +181,20 @@ export default function Footer() {
               </div>
 
               <div className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg">
+                <Phone size={18} className="text-secondary mt-1 flex-shrink-0" />
+                <div>
+                  <p className="font-medium text-white">الهاتف</p>
+                  <a
+                    href="tel:+213784928621"
+                    dir="ltr"
+                    className="text-sm hover:text-secondary transition-colors inline-block"
+                  >
+                    0784928621
+                  </a>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 bg-gray-800/50 rounded-lg">
                 <MapPin
                   size={18}
                   className="text-secondary mt-1 flex-shrink-0"
@@ -187,7 +202,9 @@ export default function Footer() {
                 <div>
                   <p className="font-medium text-white">العنوان</p>
                   <p className="text-sm">الجزائر العاصمة</p>
-                
+                  <p className="text-xs text-gray-500 mt-1">
+                    مبنى التعليم الرقمي، الطابق الثالث
+                  </p>
                 </div>
               </div>
             </div>

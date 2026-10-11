@@ -166,10 +166,6 @@ export const useAuthStore = create(
         isAuthenticated: state.isAuthenticated,
         user: state.user,
       }),
-      // ✅ onRehydrateStorage لمعرفة متى اكتمل التحميل
-      onRehydrateStorage: () => (state) => {
-        console.log("✅ Zustand rehydrated:", state?.user?.email);
-      },
     }
   )
 );

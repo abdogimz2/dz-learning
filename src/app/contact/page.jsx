@@ -99,6 +99,7 @@ export default function ContactPage() {
                 {[
                   { icon: Mail,   title: "البريد الإلكتروني", value: "Darsnadz1@gmail.com",        href: "mailto:Darsnadz1@gmail.com" },
                   { icon: Mail,   title: "البريد الإلكتروني (دعم)", value: "Darsnadz2@gmail.com",  href: "mailto:Darsnadz2@gmail.com" },
+                  { icon: Phone,  title: "الهاتف",            value: "0784928621",                href: "tel:+213784928621"        },
                   { icon: MapPin, title: "العنوان",           value: "الجزائر العاصمة",          href: null                       },
                   { icon: Clock,  title: "ساعات العمل",       value: "الأحد – الخميس، 8ص – 6م", href: null                       },
                 ].map((item, i) => (
@@ -110,7 +111,7 @@ export default function ContactPage() {
                     <div>
                       <p className="text-sm font-bold text-gray-500 dark:text-gray-400">{item.title}</p>
                       {item.href
-                        ? <a href={item.href} className="font-bold text-gray-800 dark:text-white hover:text-primary transition-colors">{item.value}</a>
+                        ? <a href={item.href} dir={item.href.startsWith("tel:") ? "ltr" : undefined} className="font-bold text-gray-800 dark:text-white hover:text-primary transition-colors inline-block">{item.value}</a>
                         : <p className="font-bold text-gray-800 dark:text-white">{item.value}</p>}
                     </div>
                   </motion.div>

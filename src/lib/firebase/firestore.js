@@ -41,7 +41,6 @@ export const createUserDocument = async (userId, userData) => {
       branchType: userData.branchType || ""
     });
     
-    console.log("✅ تم إنشاء مستند المستخدم:", userId);
     return { success: true, userId };
   } catch (error) {
     console.error("❌ خطأ في إنشاء مستند المستخدم:", error);
@@ -77,7 +76,6 @@ export const createPaymentRequest = async (paymentData) => {
       reviewedBy: null
     });
     
-    console.log("✅ تم إنشاء طلب دفع:", paymentRef.id);
     return { success: true, paymentId: paymentRef.id };
   } catch (error) {
     console.error("❌ خطأ في إنشاء طلب الدفع:", error);
@@ -105,7 +103,6 @@ export const getAllCourses = async () => {
 
 // دالة مساعدة للتطوير
 export const initializeSampleData = async () => {
-  console.log("🚀 تهيئة بيانات تجريبية...");
   
   // ستنشئ بيانات تجريبية لاحقاً
   return { success: true, message: "جاهز لتهيئة البيانات" };
